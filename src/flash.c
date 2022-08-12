@@ -5,7 +5,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_DECLARE(golioth_dfu);
+LOG_MODULE_REGISTER(flash_c);
 
 #include <stdio.h>
 #include <storage/flash_map.h>

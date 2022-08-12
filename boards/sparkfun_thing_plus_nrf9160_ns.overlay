@@ -47,3 +47,21 @@
     };
 
 };
+
+&i2c1 {
+    bme280@77 {
+        compatible = "bosch,bme280";
+        reg = <0x77>;
+        label = "BME280_I2C";
+    };
+    ccs811@5B {
+        compatible = "ams,ccs811";
+        reg = <0x5B>;
+        label = "CCS811";
+    };
+    vl53l1x@29 {
+        compatible = "st,vl53l1x";
+        reg = <0x29>;
+        label = "VL53L1X";
+    };
+};
