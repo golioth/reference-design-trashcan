@@ -105,7 +105,13 @@ void my_sensorstream_work_handler(struct k_work *work)
 	LOG_DBG("  Humidity is %d.%06d", humidity.val1, abs(humidity.val2));
 
 
-
+	// kick off a VOC sensor reading!
+	LOG_DBG("Fetching VOC Reading");
+	sensor_sample_fetch(voc_sensor);
+	sensor_channel_get(voc_sensor, SENSOR_CHAN_CO2, &co2);
+	LOG_DBG("  co2 is %d.%06d", co2.val1, abs(co2.val2));
+	sensor_channel_get(voc_sensor, SENSOR_CHAN_VOC, &voc);
+	LOG_DBG("  voc is %d.%06d", voc.val1, abs(voc.val2));
 
 
 	// snprintk(sbuf, sizeof(sbuf) - 1,
