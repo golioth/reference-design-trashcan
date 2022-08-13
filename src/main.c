@@ -86,18 +86,23 @@ void my_sensorstream_work_handler(struct k_work *work)
 	LOG_DBG("Fetching IMU Reading");
 	sensor_sample_fetch(imu_sensor);
 	sensor_channel_get(imu_sensor, SENSOR_CHAN_ACCEL_X, &accel_x);
-	LOG_DBG("Accel X is %d.%06d", accel_x.val1, abs(accel_x.val2));
+	LOG_DBG("  Accel X is %d.%06d", accel_x.val1, abs(accel_x.val2));
 	sensor_channel_get(imu_sensor, SENSOR_CHAN_ACCEL_Y, &accel_y);
-	LOG_DBG("Accel Y is %d.%06d", accel_y.val1, abs(accel_y.val2));	
+	LOG_DBG("  Accel Y is %d.%06d", accel_y.val1, abs(accel_y.val2));	
 	sensor_channel_get(imu_sensor, SENSOR_CHAN_ACCEL_Z, &accel_z);
-	LOG_DBG("Accel Z is %d.%06d", accel_z.val1, abs(accel_z.val2));
+	LOG_DBG("  Accel Z is %d.%06d", accel_z.val1, abs(accel_z.val2));
 
 
 
-	// // kick off a weather sensor reading!
-	// sensor_sample_fetch(weather_sensor);
-	// sensor_channel_get(weather_sensor, SENSOR_CHAN_AMBIENT_TEMP, &temp);
-	// LOG_DBG("Temp is %d.%06d", temp.val1, abs(temp.val2));
+	// kick off a weather sensor reading!
+	LOG_DBG("Fetching Weather Reading");
+	sensor_sample_fetch(weather_sensor);
+	sensor_channel_get(weather_sensor, SENSOR_CHAN_AMBIENT_TEMP, &temp);
+	LOG_DBG("  Temp is %d.%06d", temp.val1, abs(temp.val2));
+	sensor_channel_get(weather_sensor, SENSOR_CHAN_PRESS, &pressure);
+	LOG_DBG("  Pressure is %d.%06d", pressure.val1, abs(pressure.val2));
+	sensor_channel_get(weather_sensor, SENSOR_CHAN_HUMIDITY, &humidity);
+	LOG_DBG("  Humidity is %d.%06d", humidity.val1, abs(humidity.val2));
 
 
 
