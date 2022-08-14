@@ -78,7 +78,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 	struct sensor_value co2;
 	struct sensor_value voc;
 	struct sensor_value distance;
-	char sbuf[100];
+	char sbuf[256];
 	
 	LOG_DBG("Sensor Stream Work");
 
@@ -114,27 +114,31 @@ void my_sensorstream_work_handler(struct k_work *work)
 	LOG_DBG("  voc is %d.%06d", voc.val1, abs(voc.val2));
 
 
-	// snprintk(sbuf, sizeof(sbuf) - 1,
-	// 		"{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f,\"mag\":%f,\"temp\":%f}",
-	// 		sensor_value_to_double(&accel_x),
-	// 		sensor_value_to_double(&accel_y),
-	// 		sensor_value_to_double(&accel_z),
-	// 		sensor_value_to_double(&mag),
-	// 		sensor_value_to_double(&temp)
-	// 		);
+
+	snprintk(sbuf, sizeof(sbuf) - 1,
+			"{\"imu\":{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f},\"weather\":{\"temp\":%f,\"pressure\":%f,\"humidity\":%f},\"gas\":{\"co2\":%f,\"voc\":%f}}",
+			sensor_value_to_double(&accel_x),
+			sensor_value_to_double(&accel_y),
+			sensor_value_to_double(&accel_z),
+			sensor_value_to_double(&temp),
+			sensor_value_to_double(&pressure),
+			sensor_value_to_double(&humidity),
+			sensor_value_to_double(&co2),
+			sensor_value_to_double(&voc)
+			);
 
 
-	// // printk("string being sent to Golioth is %s\n", sbuf);
+	printk("string being sent to Golioth is %s\n", sbuf);
 
 	// err = golioth_lightdb_set(client,
-	// 				  GOLIOTH_LIGHTDB_STREAM_PATH("redSensor"),
+	// 				  GOLIOTH_LIGHTDB_STREAM_PATH("sensor"),
 	// 				  COAP_CONTENT_FORMAT_TEXT_PLAIN,
 	// 				  sbuf, 
 	// 				  strlen(sbuf));
 	// if (err) {
 	// 	LOG_WRN("Failed to send sensor: %d", err);
 	// 	printk("Failed to send sensor: %d\n", err);	
-	//}
+	// }
 
 	LOG_DBG("Sensor data sent");
 }
