@@ -12,14 +12,22 @@ LOG_MODULE_REGISTER(golioth_c, LOG_LEVEL_DBG);
 #include <net/golioth/fw.h>
 
 #include "golioth_ota.h"
+#include "golioth_app.h"
 
-static struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
+struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
 
 struct coap_reply coap_replies[4]; // TODO: Refactor to remove coap_reply global variable
 
 
 extern char current_version_str[sizeof("255.255.65535")];	//TODO: refactor to remove link to flash.c
 extern enum golioth_dfu_result dfu_initial_result; //TODO: refactor to remove link to golioth_ota.c
+
+
+
+K_MSGQ_DEFINE(sensor_data_msgq, SENSOR_DATA_STRING_LEN, SENSOR_DATA_ARRAY_SIZE, 4);
+
+
+
 
 static void golioth_on_connect(struct golioth_client *client)
 {
@@ -63,6 +71,18 @@ static void golioth_on_message(struct golioth_client *client,
 
 	(void)coap_response_received(rx, NULL, coap_replies,
 				     ARRAY_SIZE(coap_replies));
+}
+
+void send_queued_data_to_golioth(char* sensor_data_array, char* golioth_endpoint)
+{
+	int err;
+	LOG_DBG("Adding to sensor queue: %s\n", sensor_data_array);
+	LOG_DBG("Targeting endpoint: %s\n", golioth_endpoint);
+	err = k_msgq_put(&sensor_data_msgq, &sensor_data_array, K_NO_WAIT);
+	if (err){
+		LOG_ERR("Queue is full");
+	}
+
 }
 
 

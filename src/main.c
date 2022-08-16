@@ -5,7 +5,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(golioth_dfu, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_DBG);
 
 #include <net/coap.h>
 
@@ -29,8 +29,6 @@ int counter = 0;
 struct device *voc_sensor;
 struct device *imu_sensor;
 struct device *weather_sensor;
-
-static struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
 
 void sensor_init(void)
 {
@@ -78,7 +76,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 	struct sensor_value co2;
 	struct sensor_value voc;
 	struct sensor_value distance;
-	char sbuf[256];
+	char sbuf[SENSOR_DATA_STRING_LEN];
 	
 	LOG_DBG("Sensor Stream Work");
 
@@ -128,7 +126,9 @@ void my_sensorstream_work_handler(struct k_work *work)
 			);
 
 
-	printk("string being sent to Golioth is %s\n", sbuf);
+	LOG_DBG("string being sent to Golioth is %s\n", sbuf);
+
+	send_queued_data_to_golioth(&sbuf, "sensor");
 
 	// err = golioth_lightdb_set(client,
 	// 				  GOLIOTH_LIGHTDB_STREAM_PATH("sensor"),
