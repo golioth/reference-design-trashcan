@@ -73,18 +73,47 @@ static void golioth_on_message(struct golioth_client *client,
 				     ARRAY_SIZE(coap_replies));
 }
 
-void send_queued_data_to_golioth(char* sensor_data_array, char* golioth_endpoint)
+void golioth_lightdb_stream_handler(struct k_work *work) 
+
 {
 	int err;
-	LOG_DBG("Adding to sensor queue: %s\n", sensor_data_array);
-	LOG_DBG("Targeting endpoint: %s\n", golioth_endpoint);
-	err = k_msgq_put(&sensor_data_msgq, &sensor_data_array, K_NO_WAIT);
-	if (err){
-		LOG_ERR("Queue is full");
+	char stream_data[SENSOR_DATA_STRING_LEN];
+
+	LOG_DBG("Pulling data off of queue");
+	err = k_msgq_get(&sensor_data_msgq, &stream_data, K_NO_WAIT);
+	if (err)
+	{
+		LOG_DBG("Error getting data from the queue: %d\n", err);	
 	}
+
+	err = golioth_lightdb_set(client,
+					  GOLIOTH_LIGHTDB_STREAM_PATH("sensor"),
+					  COAP_CONTENT_FORMAT_TEXT_PLAIN,
+					  stream_data, 
+					  strlen(stream_data));
+	if (err) {
+		LOG_WRN("Failed to send sensor: %d", err);
+		printk("Failed to send sensor: %d\n", err);	
+	}
+
+	LOG_DBG("Sent the following to LightDB Stream: %s\n", log_strdup(stream_data));
 
 }
 
+K_WORK_DEFINE(lightdb_stream_submit_worker, golioth_lightdb_stream_handler);
+
+
+void send_queued_data_to_golioth(char* sensor_data_array, char* golioth_endpoint)
+{
+	int err;
+	err = k_msgq_put(&sensor_data_msgq, sensor_data_array, K_NO_WAIT);
+	if (err){
+		LOG_ERR("Queue is full");
+	}
+	LOG_DBG("Kicking off LightDB Stream worker");
+	k_work_submit(&lightdb_stream_submit_worker);
+
+}
 
 void app_init(void)
 {

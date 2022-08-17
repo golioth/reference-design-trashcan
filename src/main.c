@@ -76,7 +76,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 	struct sensor_value co2;
 	struct sensor_value voc;
 	struct sensor_value distance;
-	char sbuf[SENSOR_DATA_STRING_LEN];
+	char sbuf[200];
 	
 	LOG_DBG("Sensor Stream Work");
 
@@ -125,9 +125,6 @@ void my_sensorstream_work_handler(struct k_work *work)
 			sensor_value_to_double(&voc)
 			);
 
-
-	LOG_DBG("string being sent to Golioth is %s\n", sbuf);
-
 	send_queued_data_to_golioth(&sbuf, "sensor");
 
 	// err = golioth_lightdb_set(client,
@@ -139,8 +136,6 @@ void my_sensorstream_work_handler(struct k_work *work)
 	// 	LOG_WRN("Failed to send sensor: %d", err);
 	// 	printk("Failed to send sensor: %d\n", err);	
 	// }
-
-	LOG_DBG("Sensor data sent");
 }
 
 K_WORK_DEFINE(my_sensorstream_work, my_sensorstream_work_handler);
