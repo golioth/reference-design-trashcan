@@ -60,8 +60,8 @@
         label = "CCS811";
     };
     vl53l1x@29 {
-        compatible = "st,vl53l1x";
+        compatible = "st,vl53l0x";
         reg = <0x29>;
-        label = "VL53L1X";
+        label = "VL53L0X";
     };
 };
