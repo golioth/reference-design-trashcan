@@ -29,6 +29,7 @@ int counter = 0;
 struct device *voc_sensor;
 struct device *imu_sensor;
 struct device *weather_sensor;
+struct device *distance_sensor;
 
 void sensor_init(void)
 {
@@ -57,6 +58,14 @@ void sensor_init(void)
         return;
     }
 
+	LOG_DBG("VL53L0X Init");
+	distance_sensor = (void *)DEVICE_DT_GET_ANY(st_vl53l0x);
+
+    if (distance_sensor == NULL) {
+        printk("Could not get vl53l0x device\n");
+        return;
+    }
+
 }
 
 
@@ -66,7 +75,7 @@ void sensor_init(void)
 
 void my_sensorstream_work_handler(struct k_work *work)
 {
-	int err;
+	// int err;
 	struct sensor_value temp;
 	struct sensor_value pressure;	
 	struct sensor_value humidity;
@@ -76,7 +85,8 @@ void my_sensorstream_work_handler(struct k_work *work)
 	struct sensor_value co2;
 	struct sensor_value voc;
 	struct sensor_value distance;
-	char sbuf[200];
+	struct sensor_value prox;
+	char sbuf[SENSOR_DATA_STRING_LEN];
 	
 	LOG_DBG("Sensor Stream Work");
 
@@ -111,10 +121,18 @@ void my_sensorstream_work_handler(struct k_work *work)
 	sensor_channel_get(voc_sensor, SENSOR_CHAN_VOC, &voc);
 	LOG_DBG("  voc is %d.%06d", voc.val1, abs(voc.val2));
 
+	// kick off a distance sensor reading!
+	LOG_DBG("Fetching Distance Reading");
+	sensor_sample_fetch(distance_sensor);
+	sensor_channel_get(distance_sensor, SENSOR_CHAN_PROX, &prox);
+	LOG_DBG("  prox is %d.%06d", prox.val1, abs(prox.val2));
+	sensor_channel_get(distance_sensor, SENSOR_CHAN_DISTANCE, &distance);
+	LOG_DBG("  distance is %d.%06d", distance.val1, abs(distance.val2));
 
+	
 
 	snprintk(sbuf, sizeof(sbuf) - 1,
-			"{\"imu\":{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f},\"weather\":{\"temp\":%f,\"pressure\":%f,\"humidity\":%f},\"gas\":{\"co2\":%f,\"voc\":%f}}",
+			"{\"imu\":{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f},\"weather\":{\"temp\":%f,\"pressure\":%f,\"humidity\":%f},\"gas\":{\"co2\":%f,\"voc\":%f},\"distance\":{\"distance\":%f,\"prox\":%f}}",
 			sensor_value_to_double(&accel_x),
 			sensor_value_to_double(&accel_y),
 			sensor_value_to_double(&accel_z),
@@ -122,20 +140,13 @@ void my_sensorstream_work_handler(struct k_work *work)
 			sensor_value_to_double(&pressure),
 			sensor_value_to_double(&humidity),
 			sensor_value_to_double(&co2),
-			sensor_value_to_double(&voc)
+			sensor_value_to_double(&voc),
+			sensor_value_to_double(&distance),
+			sensor_value_to_double(&prox)
 			);
 
-	send_queued_data_to_golioth(&sbuf, "sensor");
+	send_queued_data_to_golioth(sbuf, "sensor");
 
-	// err = golioth_lightdb_set(client,
-	// 				  GOLIOTH_LIGHTDB_STREAM_PATH("sensor"),
-	// 				  COAP_CONTENT_FORMAT_TEXT_PLAIN,
-	// 				  sbuf, 
-	// 				  strlen(sbuf));
-	// if (err) {
-	// 	LOG_WRN("Failed to send sensor: %d", err);
-	// 	printk("Failed to send sensor: %d\n", err);	
-	// }
 }
 
 K_WORK_DEFINE(my_sensorstream_work, my_sensorstream_work_handler);
@@ -145,7 +156,7 @@ K_WORK_DEFINE(my_sensorstream_work, my_sensorstream_work_handler);
 void my_timer_handler(struct k_timer *dummy) {
 
 	char sbuf[sizeof("4294967295")];
-	int err;
+	// int err;
 
 	snprintk(sbuf, sizeof(sbuf) - 1, "%d", counter);
 
