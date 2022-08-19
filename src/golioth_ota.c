@@ -14,11 +14,10 @@ LOG_MODULE_REGISTER(ota_c, LOG_LEVEL_DBG);
 
 #include "flash.h"
 #include "golioth_ota.h"
+#include "golioth_app.h"
 
 #define REBOOT_DELAY_SEC	1
 
-
-static struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
 
 extern struct coap_reply coap_replies[4];           // from golioth_app.c, needs to be refactored
 

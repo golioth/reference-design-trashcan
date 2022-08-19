@@ -12,14 +12,22 @@ LOG_MODULE_REGISTER(golioth_c, LOG_LEVEL_DBG);
 #include <net/golioth/fw.h>
 
 #include "golioth_ota.h"
+#include "golioth_app.h"
 
-static struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
+struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
 
 struct coap_reply coap_replies[4]; // TODO: Refactor to remove coap_reply global variable
 
 
 extern char current_version_str[sizeof("255.255.65535")];	//TODO: refactor to remove link to flash.c
 extern enum golioth_dfu_result dfu_initial_result; //TODO: refactor to remove link to golioth_ota.c
+
+
+
+K_MSGQ_DEFINE(sensor_data_msgq, SENSOR_DATA_STRING_LEN, SENSOR_DATA_ARRAY_SIZE, 4);
+
+
+
 
 static void golioth_on_connect(struct golioth_client *client)
 {
@@ -65,6 +73,47 @@ static void golioth_on_message(struct golioth_client *client,
 				     ARRAY_SIZE(coap_replies));
 }
 
+void golioth_lightdb_stream_handler(struct k_work *work) 
+
+{
+	int err;
+	char stream_data[SENSOR_DATA_STRING_LEN];
+
+	LOG_DBG("Pulling data off of queue");
+	err = k_msgq_get(&sensor_data_msgq, &stream_data, K_NO_WAIT);
+	if (err)
+	{
+		LOG_DBG("Error getting data from the queue: %d\n", err);	
+	}
+
+	err = golioth_lightdb_set(client,
+					  GOLIOTH_LIGHTDB_STREAM_PATH("sensor"),
+					  COAP_CONTENT_FORMAT_TEXT_PLAIN,
+					  stream_data, 
+					  strlen(stream_data));
+	if (err) {
+		LOG_WRN("Failed to send sensor: %d", err);
+		printk("Failed to send sensor: %d\n", err);	
+	}
+
+	LOG_DBG("Sent the following to LightDB Stream: %s\n", log_strdup(stream_data));
+
+}
+
+K_WORK_DEFINE(lightdb_stream_submit_worker, golioth_lightdb_stream_handler);
+
+
+void send_queued_data_to_golioth(char* sensor_data_array, char* golioth_endpoint)
+{
+	int err;
+	err = k_msgq_put(&sensor_data_msgq, sensor_data_array, K_NO_WAIT);
+	if (err){
+		LOG_ERR("Queue is full");
+	}
+	LOG_DBG("Kicking off LightDB Stream worker");
+	k_work_submit(&lightdb_stream_submit_worker);
+
+}
 
 void app_init(void)
 {
