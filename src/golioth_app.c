@@ -6,13 +6,18 @@
 
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(golioth_c, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(golioth_app_c, LOG_LEVEL_DBG);
 
 #include <net/golioth/system_client.h>
 #include <net/golioth/fw.h>
+#include <net/golioth/settings.h>
+#include <zephyr/init.h>
+#include <zephyr/net/coap.h>
+
 
 #include "golioth_ota.h"
 #include "golioth_app.h"
+
 
 struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
 
@@ -22,11 +27,72 @@ struct coap_reply coap_replies[4]; // TODO: Refactor to remove coap_reply global
 extern char current_version_str[sizeof("255.255.65535")];	//TODO: refactor to remove link to flash.c
 extern enum golioth_dfu_result dfu_initial_result; //TODO: refactor to remove link to golioth_ota.c
 
+static uint8_t queue_counter = 0;
 
+extern uint32_t _sensor_interval; 
+extern uint32_t _transmit_every_x_reading; 
 
+// Queue for sensor data being sent to Golioth LightDB Stream
 K_MSGQ_DEFINE(sensor_data_msgq, SENSOR_DATA_STRING_LEN, SENSOR_DATA_ARRAY_SIZE, 4);
 
 
+
+
+enum golioth_settings_status on_setting(
+		const char *key,
+		const struct golioth_settings_value *value)
+{
+	LOG_DBG("Received setting: key = %s, type = %d", key, value->type);
+	if (strcmp(key, "SENSOR_READING_LOOP_S") == 0) {
+		/* TODO - change type to INT64 once backend support is merged to prod */
+
+		/* This setting is expected to be numeric, return an error if it's not */
+		if (value->type != GOLIOTH_SETTINGS_VALUE_TYPE_FLOAT) {
+			return GOLIOTH_SETTINGS_VALUE_FORMAT_NOT_VALID;
+		}
+
+		/* This setting must be in range [1, 1000], return an error if it's not */
+		if (value->f < 1.0f || value->f > 1000.0f) {
+			return GOLIOTH_SETTINGS_VALUE_OUTSIDE_RANGE;
+		}
+
+		uint8_t sensor_interval = 0;
+
+		/* Setting has passed all checks, so apply it to the loop delay */
+		sensor_interval = (int32_t)value->f;
+		LOG_INF("Set sensor interval to %d seconds", sensor_interval);
+
+		// Restart the timer with newly added value
+
+		restart_timer(sensor_interval);
+
+		return GOLIOTH_SETTINGS_SUCCESS;
+	}
+
+	if (strcmp(key, "TRANSMIT_DATA_EVERY_X_READING") == 0) {
+		/* TODO - change type to INT64 once backend support is merged to prod */
+
+		/* This setting is expected to be numeric, return an error if it's not */
+
+		if (value->type != GOLIOTH_SETTINGS_VALUE_TYPE_FLOAT) {
+			return GOLIOTH_SETTINGS_VALUE_FORMAT_NOT_VALID;
+		}
+
+		/* This setting must be in range [1, 16], return an error if it's not */
+		if (value->f < 1.0f || value->f > 16.0f) {
+			return GOLIOTH_SETTINGS_VALUE_OUTSIDE_RANGE;
+		}
+
+		/* Setting has passed all checks, so apply it to the loop delay */
+		_transmit_every_x_reading = (int32_t)value->f;
+		LOG_INF("Set to transmit every %d readings", _transmit_every_x_reading);
+
+		return GOLIOTH_SETTINGS_SUCCESS;
+	}
+
+	/* If the setting is not recognized, we should return an error */
+	return GOLIOTH_SETTINGS_KEY_NOT_RECOGNIZED;
+}
 
 
 static void golioth_on_connect(struct golioth_client *client)
@@ -57,6 +123,16 @@ static void golioth_on_connect(struct golioth_client *client)
 	if (err) {
 		coap_reply_clear(reply);
 	}
+
+	if (IS_ENABLED(CONFIG_GOLIOTH_SETTINGS)) 
+	{
+		err = golioth_settings_register_callback(client, on_setting);
+
+		if (err) 
+		{
+			LOG_ERR("Failed to register settings callback: %d", err);
+		}
+	}
 }
 
 static void golioth_on_message(struct golioth_client *client,
@@ -71,6 +147,7 @@ static void golioth_on_message(struct golioth_client *client,
 
 	(void)coap_response_received(rx, NULL, coap_replies,
 				     ARRAY_SIZE(coap_replies));
+
 }
 
 void golioth_lightdb_stream_handler(struct k_work *work) 
@@ -86,11 +163,12 @@ void golioth_lightdb_stream_handler(struct k_work *work)
 		LOG_DBG("Error getting data from the queue: %d\n", err);	
 	}
 
+
 	err = golioth_lightdb_set(client,
-					  GOLIOTH_LIGHTDB_STREAM_PATH("sensor"),
-					  COAP_CONTENT_FORMAT_TEXT_PLAIN,
-					  stream_data, 
-					  strlen(stream_data));
+					GOLIOTH_LIGHTDB_STREAM_PATH("sensor"),
+					COAP_CONTENT_FORMAT_TEXT_PLAIN,
+					stream_data, 
+					strlen(stream_data));
 	if (err) {
 		LOG_WRN("Failed to send sensor: %d", err);
 		printk("Failed to send sensor: %d\n", err);	

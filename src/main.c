@@ -19,11 +19,14 @@ LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_DBG);
 
 #include "golioth_app.h"
 #include "golioth_ota.h"
+#include "main.h"
+
 
 #include <drivers/sensor.h>
 #include <device.h>
 
-int sensor_interval = 5;
+extern uint32_t _sensor_interval;
+
 int counter = 0;
 
 struct device *voc_sensor;
@@ -160,7 +163,7 @@ void my_timer_handler(struct k_timer *dummy) {
 
 	snprintk(sbuf, sizeof(sbuf) - 1, "%d", counter);
 
-	LOG_INF("Interval of %d seconds is up, taking a reading", sensor_interval);
+	LOG_INF("Interval of %d seconds is up, taking a reading", _sensor_interval);
 	
 	// err = golioth_lightdb_set(client,
 	// 			  GOLIOTH_LIGHTDB_PATH("number_of_timed_updates"),
@@ -181,6 +184,13 @@ K_TIMER_DEFINE(my_timer, my_timer_handler, NULL);
 
 
 
+void restart_timer(uint8_t seconds)
+{
+	k_timer_stop(&my_timer);
+	LOG_INF("Restarting timer with interval of %d seconds", seconds);
+	k_timer_start(&my_timer, K_SECONDS(seconds), K_SECONDS(seconds));
+}
+
 
 void main(void)
 {
@@ -197,8 +207,8 @@ void main(void)
 	app_init();
 	sensor_init();
 
-	LOG_INF("Starting timer with interval of %d seconds", sensor_interval);
+	LOG_INF("Starting timer with interval of %d seconds", _sensor_interval);
 
-	k_timer_start(&my_timer, K_SECONDS(sensor_interval), K_SECONDS(sensor_interval));
+	k_timer_start(&my_timer, K_SECONDS(_sensor_interval), K_SECONDS(_sensor_interval));
 
 }

@@ -10,6 +10,10 @@
 
 extern struct golioth_client *client;
 
+// set initial sensor check interval to 60, will be modified by settings service
+static uint32_t _sensor_interval = 10; 
+static uint32_t _transmit_every_x_reading = 5; 
+
 /* SENSOR_DATA_STRING_LEN must be a multiple of 4!! */
 #define SENSOR_DATA_STRING_LEN	256
 #define SENSOR_DATA_ARRAY_SIZE	16
