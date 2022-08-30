@@ -10,6 +10,6 @@
 
 // Prototype
 
-void restart_timer(uint8_t);
+void restart_timer(void);
 
 #endif

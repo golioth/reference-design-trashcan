@@ -14,7 +14,7 @@ LOG_MODULE_REGISTER(golioth_app_c, LOG_LEVEL_DBG);
 #include <zephyr/init.h>
 #include <zephyr/net/coap.h>
 
-
+#include "main.h"
 #include "golioth_ota.h"
 #include "golioth_app.h"
 
@@ -27,16 +27,13 @@ struct coap_reply coap_replies[4]; // TODO: Refactor to remove coap_reply global
 extern char current_version_str[sizeof("255.255.65535")];	//TODO: refactor to remove link to flash.c
 extern enum golioth_dfu_result dfu_initial_result; //TODO: refactor to remove link to golioth_ota.c
 
-static uint8_t queue_counter = 0;
-
-extern uint32_t _sensor_interval; 
-extern uint32_t _transmit_every_x_reading; 
-
 // Queue for sensor data being sent to Golioth LightDB Stream
 K_MSGQ_DEFINE(sensor_data_msgq, SENSOR_DATA_STRING_LEN, SENSOR_DATA_ARRAY_SIZE, 4);
 
+// Set default variables
 
-
+uint32_t _sensor_interval = 60;
+uint32_t _transmit_every_x_reading = 5;
 
 enum golioth_settings_status on_setting(
 		const char *key,
@@ -47,24 +44,22 @@ enum golioth_settings_status on_setting(
 		/* TODO - change type to INT64 once backend support is merged to prod */
 
 		/* This setting is expected to be numeric, return an error if it's not */
-		if (value->type != GOLIOTH_SETTINGS_VALUE_TYPE_FLOAT) {
+		if (value->type != GOLIOTH_SETTINGS_VALUE_TYPE_INT64) {
 			return GOLIOTH_SETTINGS_VALUE_FORMAT_NOT_VALID;
 		}
 
 		/* This setting must be in range [1, 1000], return an error if it's not */
-		if (value->f < 1.0f || value->f > 1000.0f) {
+		if (value->i64 < 1 || value->i64 > 1000) {
 			return GOLIOTH_SETTINGS_VALUE_OUTSIDE_RANGE;
 		}
 
-		uint8_t sensor_interval = 0;
-
 		/* Setting has passed all checks, so apply it to the loop delay */
-		sensor_interval = (int32_t)value->f;
-		LOG_INF("Set sensor interval to %d seconds", sensor_interval);
+		_sensor_interval = (int32_t)value->i64;
+		LOG_INF("Set sensor interval to %d seconds", _sensor_interval);
 
 		// Restart the timer with newly added value
 
-		restart_timer(sensor_interval);
+		restart_timer();
 
 		return GOLIOTH_SETTINGS_SUCCESS;
 	}
@@ -74,17 +69,17 @@ enum golioth_settings_status on_setting(
 
 		/* This setting is expected to be numeric, return an error if it's not */
 
-		if (value->type != GOLIOTH_SETTINGS_VALUE_TYPE_FLOAT) {
+		if (value->type != GOLIOTH_SETTINGS_VALUE_TYPE_INT64) {
 			return GOLIOTH_SETTINGS_VALUE_FORMAT_NOT_VALID;
 		}
 
 		/* This setting must be in range [1, 16], return an error if it's not */
-		if (value->f < 1.0f || value->f > 16.0f) {
+		if (value->i64 < 1 || value->i64 > 16) {
 			return GOLIOTH_SETTINGS_VALUE_OUTSIDE_RANGE;
 		}
 
 		/* Setting has passed all checks, so apply it to the loop delay */
-		_transmit_every_x_reading = (int32_t)value->f;
+		_transmit_every_x_reading = (int32_t)value->i64;
 		LOG_INF("Set to transmit every %d readings", _transmit_every_x_reading);
 
 		return GOLIOTH_SETTINGS_SUCCESS;
@@ -192,6 +187,17 @@ void send_queued_data_to_golioth(char* sensor_data_array, char* golioth_endpoint
 	k_work_submit(&lightdb_stream_submit_worker);
 
 }
+
+uint32_t get_sensor_interval(void)
+{
+	return _sensor_interval;
+}
+
+uint32_t get_transmit_every_x_reading(void)
+{
+	return _transmit_every_x_reading;
+}
+
 
 void app_init(void)
 {
