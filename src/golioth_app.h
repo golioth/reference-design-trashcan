@@ -24,5 +24,11 @@ void app_init(void);
 void send_queued_data_to_golioth(char*, char*);
 uint32_t get_sensor_interval(void); 
 uint32_t get_transmit_every_x_reading(void); 
+uint32_t get_trash_level_50_pct_in_mm(void);
+uint32_t get_trash_level_75_pct_in_mm(void);
+uint32_t get_trash_level_90_pct_in_mm(void);
+uint32_t get_trash_level_95_pct_in_mm(void);
+uint32_t get_trash_level_98_pct_in_mm(void);
+
 
 #endif
