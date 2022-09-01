@@ -89,7 +89,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 	struct sensor_value voc;
 	struct sensor_value distance;
 	struct sensor_value prox;
-	double trash_level;
+	double trash_level = 0;
 	char sbuf[SENSOR_DATA_STRING_LEN];
 	
 	LOG_DBG("Sensor Stream Work");
@@ -135,35 +135,51 @@ void my_sensorstream_work_handler(struct k_work *work)
 
 	// Set the percentage threshhold for trash from distance sensor
 
-	double distance_to_trash = sensor_value_to_double(&distance);
-	if (distance_to_trash < get_trash_level_50_pct_in_mm())
+	double distance_to_trash_in_mm = 1000*sensor_value_to_double(&distance);
+	LOG_DBG("Trash distance is %f mm", distance_to_trash_in_mm);
+	
+	if (distance_to_trash_in_mm > get_trash_dist_25_pct_in_mm())
 	{
 		trash_level = 0;
 	}
-	else if (distance_to_trash > get_trash_level_50_pct_in_mm() && distance_to_trash < get_trash_level_75_pct_in_mm())
+	else if (distance_to_trash_in_mm < get_trash_dist_25_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_50_pct_in_mm())
+	{
+		trash_level = 25;
+	}
+	else if (distance_to_trash_in_mm < get_trash_dist_50_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_75_pct_in_mm())
 	{
 		trash_level = 50;
 	}
-	else if (distance_to_trash > get_trash_level_75_pct_in_mm() && distance_to_trash < get_trash_level_90_pct_in_mm())
+	else if (distance_to_trash_in_mm < get_trash_dist_75_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_90_pct_in_mm())
 	{
 		trash_level = 75;
 	}
-	else if (distance_to_trash > get_trash_level_90_pct_in_mm() && distance_to_trash < get_trash_level_95_pct_in_mm())
+	else if (distance_to_trash_in_mm < get_trash_dist_90_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_95_pct_in_mm())
 	{
 		trash_level = 90;
 	}
-		else if (distance_to_trash > get_trash_level_95_pct_in_mm() && distance_to_trash < get_trash_level_98_pct_in_mm())
+	else if (distance_to_trash_in_mm < get_trash_dist_95_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_98_pct_in_mm())
 	{
 		trash_level = 95;
 	}
-	else if (distance_to_trash > get_trash_level_98_pct_in_mm())
+	else if (distance_to_trash_in_mm < get_trash_dist_98_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_100_pct_in_mm())
 	{
 		trash_level = 98;
+	}
+	else if (distance_to_trash_in_mm < get_trash_dist_100_pct_in_mm())
+	{
+		trash_level = 100;
+	}
+	else
+	{
+		// Error state
+		LOG_ERR("Your math or your distance limits are wrong. Check settings.");
+
 	}
 
 
 	snprintk(sbuf, sizeof(sbuf) - 1,
-			"{\"imu\":{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f},\"weather\":{\"temp\":%f,\"pressure\":%f,\"humidity\":%f},\"gas\":{\"co2\":%f,\"voc\":%f},\"distance\":{\"distance\":%f,\"prox\":%f,\"trash_level\":%d}}",
+			"{\"imu\":{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f},\"weather\":{\"temp\":%f,\"pressure\":%f,\"humidity\":%f},\"gas\":{\"co2\":%f,\"voc\":%f},\"distance\":{\"distance\":%f,\"prox\":%f,\"level\":%f}}",
 			sensor_value_to_double(&accel_x),
 			sensor_value_to_double(&accel_y),
 			sensor_value_to_double(&accel_z),

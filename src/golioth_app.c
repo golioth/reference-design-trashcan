@@ -34,11 +34,13 @@ K_MSGQ_DEFINE(sensor_data_msgq, SENSOR_DATA_STRING_LEN, SENSOR_DATA_ARRAY_SIZE, 
 
 uint32_t _sensor_interval = 60;
 uint32_t _transmit_every_x_reading = 5;
-uint32_t TRASH_LEVEL_50PCT_IN_MM = 500;
-uint32_t TRASH_LEVEL_75PCT_IN_MM = 750;
-uint32_t TRASH_LEVEL_90PCT_IN_MM = 900;
-uint32_t TRASH_LEVEL_95PCT_IN_MM = 950;
-uint32_t TRASH_LEVEL_98PCT_IN_MM = 980;
+uint32_t TRASH_DIST_25PCT_IN_MM = 500;
+uint32_t TRASH_DIST_50PCT_IN_MM = 500;
+uint32_t TRASH_DIST_75PCT_IN_MM = 250;
+uint32_t TRASH_DIST_90PCT_IN_MM = 100;
+uint32_t TRASH_DIST_95PCT_IN_MM = 50;
+uint32_t TRASH_DIST_98PCT_IN_MM = 20;
+uint32_t TRASH_DIST_100PCT_IN_MM = 0;
 
 enum golioth_settings_status on_setting(
 		const char *key,
@@ -88,7 +90,7 @@ enum golioth_settings_status on_setting(
 		return GOLIOTH_SETTINGS_SUCCESS;
 	}
 
-	if (strcmp(key, "TRASH_LEVEL_50PCT_IN_MM") == 0) {
+	if (strcmp(key, "TRASH_DIST_25PCT_IN_MM") == 0) {
 
 		/* This setting is expected to be numeric, return an error if it's not */
 
@@ -102,13 +104,13 @@ enum golioth_settings_status on_setting(
 		}
 
 		/* Setting has passed all checks, so apply it to the loop delay */
-		TRASH_LEVEL_50PCT_IN_MM = (int32_t)value->i64;
-		LOG_INF("50PCT Trashcan level set to %d mm", TRASH_LEVEL_50PCT_IN_MM);
+		TRASH_DIST_25PCT_IN_MM = (int32_t)value->i64;
+		LOG_INF("25PCT Trash level set to %d mm", TRASH_DIST_25PCT_IN_MM);
 
 		return GOLIOTH_SETTINGS_SUCCESS;
 	}
 
-	if (strcmp(key, "TRASH_LEVEL_75PCT_IN_MM") == 0) {
+	if (strcmp(key, "TRASH_DIST_50PCT_IN_MM") == 0) {
 
 		/* This setting is expected to be numeric, return an error if it's not */
 
@@ -122,13 +124,13 @@ enum golioth_settings_status on_setting(
 		}
 
 		/* Setting has passed all checks, so apply it to the loop delay */
-		TRASH_LEVEL_75PCT_IN_MM = (int32_t)value->i64;
-		LOG_INF("75PCT Trashcan level set to %d mm", TRASH_LEVEL_75PCT_IN_MM);
+		TRASH_DIST_50PCT_IN_MM = (int32_t)value->i64;
+		LOG_INF("50PCT Trash level set to %d mm", TRASH_DIST_50PCT_IN_MM);
 
 		return GOLIOTH_SETTINGS_SUCCESS;
 	}
 
-	if (strcmp(key, "TRASH_LEVEL_90PCT_IN_MM") == 0) {
+	if (strcmp(key, "TRASH_DIST_75PCT_IN_MM") == 0) {
 
 		/* This setting is expected to be numeric, return an error if it's not */
 
@@ -142,13 +144,13 @@ enum golioth_settings_status on_setting(
 		}
 
 		/* Setting has passed all checks, so apply it to the loop delay */
-		TRASH_LEVEL_90PCT_IN_MM = (int32_t)value->i64;
-		LOG_INF("90PCT Trashcan level set to %d mm", TRASH_LEVEL_90PCT_IN_MM);
+		TRASH_DIST_75PCT_IN_MM = (int32_t)value->i64;
+		LOG_INF("75PCT Trash level set to %d mm", TRASH_DIST_75PCT_IN_MM);
 
 		return GOLIOTH_SETTINGS_SUCCESS;
 	}
 
-		if (strcmp(key, "TRASH_LEVEL_95PCT_IN_MM") == 0) {
+	if (strcmp(key, "TRASH_DIST_90PCT_IN_MM") == 0) {
 
 		/* This setting is expected to be numeric, return an error if it's not */
 
@@ -162,13 +164,13 @@ enum golioth_settings_status on_setting(
 		}
 
 		/* Setting has passed all checks, so apply it to the loop delay */
-		TRASH_LEVEL_95PCT_IN_MM = (int32_t)value->i64;
-		LOG_INF("95PCT Trashcan level set to %d mm", TRASH_LEVEL_95PCT_IN_MM);
+		TRASH_DIST_90PCT_IN_MM = (int32_t)value->i64;
+		LOG_INF("90PCT Trash level set to %d mm", TRASH_DIST_90PCT_IN_MM);
 
 		return GOLIOTH_SETTINGS_SUCCESS;
 	}
 
-	if (strcmp(key, "TRASH_LEVEL_98PCT_IN_MM") == 0) {
+		if (strcmp(key, "TRASH_DIST_95PCT_IN_MM") == 0) {
 
 		/* This setting is expected to be numeric, return an error if it's not */
 
@@ -182,8 +184,48 @@ enum golioth_settings_status on_setting(
 		}
 
 		/* Setting has passed all checks, so apply it to the loop delay */
-		TRASH_LEVEL_98PCT_IN_MM = (int32_t)value->i64;
-		LOG_INF("98PCT Trashcan level set to %d mm", TRASH_LEVEL_98PCT_IN_MM);
+		TRASH_DIST_95PCT_IN_MM = (int32_t)value->i64;
+		LOG_INF("95PCT Trash distance set to %d mm", TRASH_DIST_95PCT_IN_MM);
+
+		return GOLIOTH_SETTINGS_SUCCESS;
+	}
+
+	if (strcmp(key, "TRASH_DIST_98PCT_IN_MM") == 0) {
+
+		/* This setting is expected to be numeric, return an error if it's not */
+
+		if (value->type != GOLIOTH_SETTINGS_VALUE_TYPE_INT64) {
+			return GOLIOTH_SETTINGS_VALUE_FORMAT_NOT_VALID;
+		}
+
+		/* This setting must be in range [1, 5000], return an error if it's not */
+		if (value->i64 < 1 || value->i64 > 5000) {
+			return GOLIOTH_SETTINGS_VALUE_OUTSIDE_RANGE;
+		}
+
+		/* Setting has passed all checks, so apply it to the loop delay */
+		TRASH_DIST_98PCT_IN_MM = (int32_t)value->i64;
+		LOG_INF("98PCT Trash distance set to %d mm", TRASH_DIST_98PCT_IN_MM);
+
+		return GOLIOTH_SETTINGS_SUCCESS;
+	}
+
+	if (strcmp(key, "TRASH_DIST_100PCT_IN_MM") == 0) {
+
+		/* This setting is expected to be numeric, return an error if it's not */
+
+		if (value->type != GOLIOTH_SETTINGS_VALUE_TYPE_INT64) {
+			return GOLIOTH_SETTINGS_VALUE_FORMAT_NOT_VALID;
+		}
+
+		/* This setting must be in range [1, 5000], return an error if it's not */
+		if (value->i64 < 1 || value->i64 > 5000) {
+			return GOLIOTH_SETTINGS_VALUE_OUTSIDE_RANGE;
+		}
+
+		/* Setting has passed all checks, so apply it to the loop delay */
+		TRASH_DIST_100PCT_IN_MM = (int32_t)value->i64;
+		LOG_INF("100PCT Trash distance set to %d mm", TRASH_DIST_100PCT_IN_MM);
 
 		return GOLIOTH_SETTINGS_SUCCESS;
 	}
@@ -301,29 +343,39 @@ uint32_t get_transmit_every_x_reading(void)
 	return _transmit_every_x_reading;
 }
 
-uint32_t get_trash_level_50_pct_in_mm(void)
+uint32_t get_trash_dist_25_pct_in_mm(void)
 {
-	return TRASH_LEVEL_50PCT_IN_MM;
+	return TRASH_DIST_25PCT_IN_MM;
 }
 
-uint32_t get_trash_level_75_pct_in_mm(void)
+uint32_t get_trash_dist_50_pct_in_mm(void)
 {
-	return TRASH_LEVEL_75PCT_IN_MM;
+	return TRASH_DIST_50PCT_IN_MM;
 }
 
-uint32_t get_trash_level_90_pct_in_mm(void)
+uint32_t get_trash_dist_75_pct_in_mm(void)
 {
-	return TRASH_LEVEL_90PCT_IN_MM;
+	return TRASH_DIST_75PCT_IN_MM;
 }
 
-uint32_t get_trash_level_95_pct_in_mm(void)
+uint32_t get_trash_dist_90_pct_in_mm(void)
 {
-	return TRASH_LEVEL_95PCT_IN_MM;
+	return TRASH_DIST_90PCT_IN_MM;
 }
 
-uint32_t get_trash_level_98_pct_in_mm(void)
+uint32_t get_trash_dist_95_pct_in_mm(void)
 {
-	return TRASH_LEVEL_98PCT_IN_MM;
+	return TRASH_DIST_95PCT_IN_MM;
+}
+
+uint32_t get_trash_dist_98_pct_in_mm(void)
+{
+	return TRASH_DIST_98PCT_IN_MM;
+}
+
+uint32_t get_trash_dist_100_pct_in_mm(void)
+{
+	return TRASH_DIST_100PCT_IN_MM;
 }
 
 void app_init(void)
