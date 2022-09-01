@@ -19,11 +19,14 @@ LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_DBG);
 
 #include "golioth_app.h"
 #include "golioth_ota.h"
+#include "main.h"
+
 
 #include <drivers/sensor.h>
 #include <device.h>
 
-int sensor_interval = 5;
+static uint32_t timer_interval;
+
 int counter = 0;
 
 struct device *voc_sensor;
@@ -86,6 +89,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 	struct sensor_value voc;
 	struct sensor_value distance;
 	struct sensor_value prox;
+	double trash_level = 0;
 	char sbuf[SENSOR_DATA_STRING_LEN];
 	
 	LOG_DBG("Sensor Stream Work");
@@ -129,10 +133,53 @@ void my_sensorstream_work_handler(struct k_work *work)
 	sensor_channel_get(distance_sensor, SENSOR_CHAN_DISTANCE, &distance);
 	LOG_DBG("  distance is %d.%06d", distance.val1, abs(distance.val2));
 
+	// Set the percentage threshhold for trash from distance sensor
+
+	double distance_to_trash_in_mm = 1000*sensor_value_to_double(&distance);
+	LOG_DBG("Trash distance is %f mm", distance_to_trash_in_mm);
 	
+	if (distance_to_trash_in_mm > get_trash_dist_25_pct_in_mm())
+	{
+		trash_level = 0;
+	}
+	else if (distance_to_trash_in_mm < get_trash_dist_25_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_50_pct_in_mm())
+	{
+		trash_level = 25;
+	}
+	else if (distance_to_trash_in_mm < get_trash_dist_50_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_75_pct_in_mm())
+	{
+		trash_level = 50;
+	}
+	else if (distance_to_trash_in_mm < get_trash_dist_75_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_90_pct_in_mm())
+	{
+		trash_level = 75;
+	}
+	else if (distance_to_trash_in_mm < get_trash_dist_90_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_95_pct_in_mm())
+	{
+		trash_level = 90;
+	}
+	else if (distance_to_trash_in_mm < get_trash_dist_95_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_98_pct_in_mm())
+	{
+		trash_level = 95;
+	}
+	else if (distance_to_trash_in_mm < get_trash_dist_98_pct_in_mm() && distance_to_trash_in_mm > get_trash_dist_100_pct_in_mm())
+	{
+		trash_level = 98;
+	}
+	else if (distance_to_trash_in_mm < get_trash_dist_100_pct_in_mm())
+	{
+		trash_level = 100;
+	}
+	else
+	{
+		// Error state
+		LOG_ERR("Your math or your distance limits are wrong. Check settings.");
+
+	}
+
 
 	snprintk(sbuf, sizeof(sbuf) - 1,
-			"{\"imu\":{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f},\"weather\":{\"temp\":%f,\"pressure\":%f,\"humidity\":%f},\"gas\":{\"co2\":%f,\"voc\":%f},\"distance\":{\"distance\":%f,\"prox\":%f}}",
+			"{\"imu\":{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f},\"weather\":{\"temp\":%f,\"pressure\":%f,\"humidity\":%f},\"gas\":{\"co2\":%f,\"voc\":%f},\"distance\":{\"distance\":%f,\"prox\":%f,\"level\":%f}}",
 			sensor_value_to_double(&accel_x),
 			sensor_value_to_double(&accel_y),
 			sensor_value_to_double(&accel_z),
@@ -142,10 +189,13 @@ void my_sensorstream_work_handler(struct k_work *work)
 			sensor_value_to_double(&co2),
 			sensor_value_to_double(&voc),
 			sensor_value_to_double(&distance),
-			sensor_value_to_double(&prox)
+			sensor_value_to_double(&prox),
+			trash_level
 			);
 
 	send_queued_data_to_golioth(sbuf, "sensor");
+
+	//add a ksleep
 
 }
 
@@ -160,7 +210,7 @@ void my_timer_handler(struct k_timer *dummy) {
 
 	snprintk(sbuf, sizeof(sbuf) - 1, "%d", counter);
 
-	LOG_INF("Interval of %d seconds is up, taking a reading", sensor_interval);
+	LOG_INF("Interval of %d seconds is up, taking a reading", timer_interval);
 	
 	// err = golioth_lightdb_set(client,
 	// 			  GOLIOTH_LIGHTDB_PATH("number_of_timed_updates"),
@@ -181,6 +231,14 @@ K_TIMER_DEFINE(my_timer, my_timer_handler, NULL);
 
 
 
+void restart_timer(void)
+{
+	uint32_t timer_interval = get_sensor_interval();
+	k_timer_stop(&my_timer);
+	LOG_INF("Restarting timer with interval of %d seconds", timer_interval);
+	k_timer_start(&my_timer, K_SECONDS(timer_interval), K_SECONDS(timer_interval));
+}
+
 
 void main(void)
 {
@@ -197,8 +255,8 @@ void main(void)
 	app_init();
 	sensor_init();
 
-	LOG_INF("Starting timer with interval of %d seconds", sensor_interval);
-
-	k_timer_start(&my_timer, K_SECONDS(sensor_interval), K_SECONDS(sensor_interval));
+	uint32_t timer_interval = get_sensor_interval();
+	LOG_INF("Starting timer with interval of %d seconds", timer_interval);
+	k_timer_start(&my_timer, K_SECONDS(timer_interval), K_SECONDS(timer_interval));
 
 }
