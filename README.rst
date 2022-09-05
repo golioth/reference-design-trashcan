@@ -9,17 +9,21 @@ This is a Reference Design for remote trashcan monitoring. It is targeted at mun
 The device captures and sends the following readings back to the Golioth Cloud, which are then displayed on a dashboard:
 
 - Distance sensor - Used to measure trash height
+
   - Distance (m)
   - Proximity (t/f)
   - Level (range of values)
 - Weather Sensor - Used to monitor surrounding conditions
+
   - Temperature
   - Pressure
   - Humidity
 - Gas Sensor - Used to monitor trash contents
+
   - CO2
   - VOC
 - Accelerometer - Used to measure trash can orientation (tipped over or not)
+
   - X
   - Y 
   - Z
@@ -43,12 +47,14 @@ Requirements
 - Golioth credentials
 - SIM Card with data
 - Hardware
+
   - Sparkfun Thing Plus nRF9160
   - Sparkfun Environmental Combo QWIIC board
   - Adafruit VL53L0x STEMMA board
   - External Lithium Polymer Battery, plugged into the 2 mm JST plugged
   - Enclosure (user discretion)
 - External tools 
+
   - JLink or similar programmer (nRF9160-DK) to directly program the Sparkfun Thing Plus nRF9160 over the 10 pin (0.05in, 02x05 connector) SWD connector. If you choose not to use a programmer, you will need to load the MCUboot image over USB (not recommended).
 
 
