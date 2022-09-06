@@ -68,7 +68,7 @@ Replicate the project. If you are using a Virtual Python instance, you will need
    $ source .venv/bin/activate
    $ (.venv) mkdir golioth-reference-design-trashcan
    $ (.venv) cd golioth-reference-design-trashcan
-   $ (.venv) west init -m git@github.com:golioth/vertical-trashcan.git .
+   $ (.venv) west init -m git@github.com:golioth/reference-design-trashcan.git .
    $ (.venv) west update
    
 
