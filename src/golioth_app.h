@@ -12,8 +12,10 @@ extern struct golioth_client *client;
 
 
 /* SENSOR_DATA_STRING_LEN must be a multiple of 4!! */
-#define SENSOR_DATA_STRING_LEN	256
+#define SENSOR_DATA_STRING_LEN	300
 #define SENSOR_DATA_ARRAY_SIZE	16
+#define MIN_Z_THRESHOLD -10
+#define MAX_Z_THRESHOLD 10
 
 
 #define GOLIOTH_STREAM_DEFAULT_ENDPOINT GOLIOTH_LIGHTDB_STREAM_PATH("sensor")
@@ -31,6 +33,7 @@ uint32_t get_trash_dist_90_pct_in_mm(void);
 uint32_t get_trash_dist_95_pct_in_mm(void);
 uint32_t get_trash_dist_98_pct_in_mm(void);
 uint32_t get_trash_dist_100_pct_in_mm(void);
+double get_z_threshold(void);
 
 
 #endif

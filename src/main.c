@@ -90,6 +90,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 	struct sensor_value distance;
 	struct sensor_value prox;
 	double trash_level = 0;
+	char* orientation = "unknown";
 	char sbuf[SENSOR_DATA_STRING_LEN];
 	
 	LOG_DBG("Sensor Stream Work");
@@ -178,11 +179,31 @@ void my_sensorstream_work_handler(struct k_work *work)
 	}
 
 
+	// Bucket the Z accelerometer reading
+	double z_orientation = sensor_value_to_double(&accel_z);
+	LOG_DBG("Z accel is %f and the Threshhold is %f", z_orientation, get_z_threshold());
+	if (z_orientation > (double)get_z_threshold() && z_orientation > MIN_Z_THRESHOLD)
+	{
+		orientation = "upright";	
+	}
+	else if (z_orientation < (double)get_z_threshold() && z_orientation < MAX_Z_THRESHOLD)
+	{
+		orientation = "tipped";
+	}
+	else
+	{
+		orientation = "error";
+		LOG_ERR("Your math or your Z_Threshold limits are wrong. Check settings.");
+	}
+	LOG_DBG("Orientation is %s", orientation);
+
+
 	snprintk(sbuf, sizeof(sbuf) - 1,
-			"{\"imu\":{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f},\"weather\":{\"temp\":%f,\"pressure\":%f,\"humidity\":%f},\"gas\":{\"co2\":%f,\"voc\":%f},\"distance\":{\"distance\":%f,\"prox\":%f,\"level\":%f}}",
+			"{\"imu\":{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f,\"orientation\":\"%s\"},\"weather\":{\"temp\":%f,\"pressure\":%f,\"humidity\":%f},\"gas\":{\"co2\":%f,\"voc\":%f},\"distance\":{\"distance\":%f,\"prox\":%f,\"level\":%f}}",
 			sensor_value_to_double(&accel_x),
 			sensor_value_to_double(&accel_y),
 			sensor_value_to_double(&accel_z),
+			orientation,
 			sensor_value_to_double(&temp),
 			sensor_value_to_double(&pressure),
 			sensor_value_to_double(&humidity),
