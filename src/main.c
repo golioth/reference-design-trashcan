@@ -175,6 +175,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 		LOG_ERR("Your math or your distance limits are wrong. Check settings.");
 
 	}
+	LOG_INF("Trash level is %f", trash_level);
 
 
 	// Bucket the Z accelerometer reading
@@ -193,7 +194,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 		orientation = "error";
 		LOG_ERR("Your math or your Z_Threshold limits are wrong. Check settings.");
 	}
-	LOG_DBG("Orientation is %s", orientation);
+	LOG_INF("Orientation is %s", orientation);
 
 
 	snprintk(sbuf, sizeof(sbuf) - 1,
