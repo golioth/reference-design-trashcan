@@ -6,7 +6,7 @@
 
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(golioth_app_c, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(golioth_app_c, LOG_LEVEL_INF);
 
 #include <net/golioth/system_client.h>
 #include <net/golioth/fw.h>

@@ -5,7 +5,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_INF);
 
 #include <net/coap.h>
 
@@ -24,8 +24,6 @@ LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_DBG);
 
 #include <drivers/sensor.h>
 #include <device.h>
-
-static uint32_t timer_interval;
 
 int counter = 0;
 
@@ -228,6 +226,8 @@ void my_timer_handler(struct k_timer *dummy) {
 
 	char sbuf[sizeof("4294967295")];
 	// int err;
+
+	uint32_t timer_interval = get_sensor_interval();
 
 	snprintk(sbuf, sizeof(sbuf) - 1, "%d", counter);
 
