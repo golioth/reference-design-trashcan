@@ -6,7 +6,7 @@
 
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(golioth_app_c, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(golioth_app_c, LOG_LEVEL_INF);
 
 #include <net/golioth/system_client.h>
 #include <net/golioth/fw.h>
@@ -41,6 +41,7 @@ uint32_t TRASH_DIST_90PCT_IN_MM = 100;
 uint32_t TRASH_DIST_95PCT_IN_MM = 50;
 uint32_t TRASH_DIST_98PCT_IN_MM = 20;
 uint32_t TRASH_DIST_100PCT_IN_MM = 0;
+double Z_THRESHOLD = 0;	
 
 enum golioth_settings_status on_setting(
 		const char *key,
@@ -230,6 +231,25 @@ enum golioth_settings_status on_setting(
 		return GOLIOTH_SETTINGS_SUCCESS;
 	}
 
+	if (strcmp(key, "Z_THRESHOLD") == 0) {
+
+		/* This setting is expected to be numeric, return an error if it's not */
+		if (value->type != GOLIOTH_SETTINGS_VALUE_TYPE_FLOAT) {
+			return GOLIOTH_SETTINGS_VALUE_FORMAT_NOT_VALID;
+		}
+
+		/* This setting must be in range [-10, 10], return an error if it's not */
+		if (value->f < MIN_Z_THRESHOLD || value->f > MAX_Z_THRESHOLD) {
+			return GOLIOTH_SETTINGS_VALUE_OUTSIDE_RANGE;
+		}
+
+		/* Setting has passed all checks, so apply it to the loop delay */
+		Z_THRESHOLD = (double)value->f;
+		LOG_INF("Z Threshold set to %f", Z_THRESHOLD);
+
+		return GOLIOTH_SETTINGS_SUCCESS;
+	}
+
 	/* If the setting is not recognized, we should return an error */
 	return GOLIOTH_SETTINGS_KEY_NOT_RECOGNIZED;
 }
@@ -302,8 +322,9 @@ void golioth_lightdb_stream_handler(struct k_work *work)
 	{
 		LOG_DBG("Error getting data from the queue: %d\n", err);	
 	}
-
-
+	
+	// LOG_DBG("Sending to LightDB Stream: %s", log_strdup(stream_data));
+	
 	err = golioth_lightdb_set(client,
 					GOLIOTH_LIGHTDB_STREAM_PATH("sensor"),
 					COAP_CONTENT_FORMAT_TEXT_PLAIN,
@@ -314,7 +335,7 @@ void golioth_lightdb_stream_handler(struct k_work *work)
 		printk("Failed to send sensor: %d\n", err);	
 	}
 
-	LOG_DBG("Sent the following to LightDB Stream: %s\n", log_strdup(stream_data));
+	LOG_DBG("Sent the following to LightDB Stream: %s", log_strdup(stream_data));
 
 }
 
@@ -376,6 +397,11 @@ uint32_t get_trash_dist_98_pct_in_mm(void)
 uint32_t get_trash_dist_100_pct_in_mm(void)
 {
 	return TRASH_DIST_100PCT_IN_MM;
+}
+
+double get_z_threshold(void)
+{
+	return Z_THRESHOLD;
 }
 
 void app_init(void)
