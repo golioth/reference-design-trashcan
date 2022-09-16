@@ -24,6 +24,10 @@ LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_INF);
 
 #include <drivers/sensor.h>
 #include <device.h>
+#include <zephyr/drivers/gpio.h>
+
+#define DEBOUNCE_TIMEOUT_MS 50
+
 
 int counter = 0;
 
@@ -32,47 +36,26 @@ struct device *imu_sensor;
 struct device *weather_sensor;
 struct device *distance_sensor;
 
-void sensor_init(void)
-{
 
-	LOG_DBG("CCS811 Init");
-	voc_sensor = (void *)DEVICE_DT_GET_ANY(ams_ccs811);
 
-    if (voc_sensor == NULL) {
-        printk("Could not get ccs811 device\n");
-        return;
-    }
 
-	LOG_DBG("LIS2DH Init");
-	imu_sensor = (void *)DEVICE_DT_GET_ANY(st_lis2dh);
-
-    if (imu_sensor == NULL) {
-        printk("Could not get lis2dh device\n");
-        return;
-    }
-
-	LOG_DBG("BME280 Init");
-	weather_sensor = (void *)DEVICE_DT_GET_ANY(bosch_bme280);
-
-    if (weather_sensor == NULL) {
-        printk("Could not get bme280 device\n");
-        return;
-    }
-
-	LOG_DBG("VL53L0X Init");
-	distance_sensor = (void *)DEVICE_DT_GET_ANY(st_vl53l0x);
-
-    if (distance_sensor == NULL) {
-        printk("Could not get vl53l0x device\n");
-        return;
-    }
-
-}
+/*
+ * Get button configuration from the devicetree sw0 alias. This is mandatory.
+ */
+#define SW0_NODE	DT_ALIAS(sw0)
+#if !DT_NODE_HAS_STATUS(SW0_NODE, okay)
+#error "Unsupported board: sw0 devicetree alias is not defined"
+#endif
+static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios,
+							      {0});
+static struct gpio_callback button_cb_data;
 
 
 
 // This work function will submit a LightDB Stream output
 // It should be called every time the sensor takes a reading
+// Now near the top of main.c because the timer and button cb
+// both need to know about it. Might move to separate file later.
 
 void my_sensorstream_work_handler(struct k_work *work)
 {
@@ -175,6 +158,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 		LOG_ERR("Your math or your distance limits are wrong. Check settings.");
 
 	}
+	LOG_INF("Trash level is %f", trash_level);
 
 
 	// Bucket the Z accelerometer reading
@@ -193,7 +177,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 		orientation = "error";
 		LOG_ERR("Your math or your Z_Threshold limits are wrong. Check settings.");
 	}
-	LOG_DBG("Orientation is %s", orientation);
+	LOG_INF("Orientation is %s", orientation);
 
 
 	snprintk(sbuf, sizeof(sbuf) - 1,
@@ -220,6 +204,104 @@ void my_sensorstream_work_handler(struct k_work *work)
 
 K_WORK_DEFINE(my_sensorstream_work, my_sensorstream_work_handler);
 
+
+
+
+
+void button_pressed(const struct device *dev, struct gpio_callback *cb,
+		    uint32_t pins)
+{
+	
+	// Software timer debounce
+
+	static uint64_t last_time = 0;
+
+	uint64_t now = k_uptime_get();
+	// printk("Now is %lld, last time is %lld\n", now, last_time); // debug debounce
+	if ((now - last_time) > DEBOUNCE_TIMEOUT_MS)
+	{
+		k_work_submit(&my_sensorstream_work);
+		LOG_INF("Button pressed, initiating reading and restarting");
+		restart_timer();
+	}
+	last_time = now;
+
+}
+
+
+
+
+void button_init(void)
+
+{
+	int ret;
+
+	if (!device_is_ready(button.port)) {
+		printk("Error: button device %s is not ready\n",
+		       button.port->name);
+		return;
+	}
+
+	ret = gpio_pin_configure_dt(&button, GPIO_INPUT);
+	if (ret != 0) {
+		printk("Error %d: failed to configure %s pin %d\n",
+		       ret, button.port->name, button.pin);
+		return;
+	}
+
+	ret = gpio_pin_interrupt_configure_dt(&button,
+					      GPIO_INT_LEVEL_ACTIVE);
+	if (ret != 0) {
+		printk("Error %d: failed to configure interrupt on %s pin %d\n",
+			ret, button.port->name, button.pin);
+		return;
+	}
+
+	gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
+	gpio_add_callback(button.port, &button_cb_data);
+	printk("Set up button at %s pin %d\n", button.port->name, button.pin);
+
+}
+
+
+
+
+void sensor_init(void)
+{
+
+	LOG_DBG("CCS811 Init");
+	voc_sensor = (void *)DEVICE_DT_GET_ANY(ams_ccs811);
+
+    if (voc_sensor == NULL) {
+        printk("Could not get ccs811 device\n");
+        return;
+    }
+
+	LOG_DBG("LIS2DH Init");
+	imu_sensor = (void *)DEVICE_DT_GET_ANY(st_lis2dh);
+
+    if (imu_sensor == NULL) {
+        printk("Could not get lis2dh device\n");
+        return;
+    }
+
+	LOG_DBG("BME280 Init");
+	weather_sensor = (void *)DEVICE_DT_GET_ANY(bosch_bme280);
+
+    if (weather_sensor == NULL) {
+        printk("Could not get bme280 device\n");
+        return;
+    }
+
+	LOG_DBG("VL53L0X Init");
+	distance_sensor = (void *)DEVICE_DT_GET_ANY(st_vl53l0x);
+
+    if (distance_sensor == NULL) {
+        printk("Could not get vl53l0x device\n");
+        return;
+    }
+
+}
 
 
 void my_timer_handler(struct k_timer *dummy) {
@@ -261,6 +343,7 @@ void restart_timer(void)
 }
 
 
+
 void main(void)
 {
 
@@ -275,6 +358,7 @@ void main(void)
 
 	app_init();
 	sensor_init();
+	button_init();
 
 	uint32_t timer_interval = get_sensor_interval();
 	LOG_INF("Starting timer with interval of %d seconds", timer_interval);
