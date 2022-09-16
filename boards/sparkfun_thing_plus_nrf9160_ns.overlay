@@ -1,48 +1,14 @@
 / {
     aliases {
-        led0 = &blue_led;
-        led1 = &top_lock;
-        led2 = &top_light;
-	    led3 = &bottom_lock;
-	    led4 = &bottom_light;
-
-        swtop = &topsw;
-        swbottom = &bottomsw;
+        sw0 = &greenbtn;
     };
 
-    leds {
-        compatible = "gpio-leds";
-        blue_led: led_0 {
-            gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;
-            label = "Blue LED (D7)";
-            };
-	    top_lock: led_1 {
-            gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
-            label = "Top locker solenoid";
-            };
-        top_light: led_2 {
-            gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
-            label = "Top locker LED strip";
-            };
-        bottom_lock: led_3 {
-            gpios = <&gpio0 29 GPIO_ACTIVE_HIGH>;
-            label = "Bottom locker solenoid";
-            };
-        bottom_light: led_4 {
-            gpios = <&gpio0 30 GPIO_ACTIVE_HIGH>;
-            label = "Bottom locker LED strip";
-            };
-    };
     
     gpio_keys {
         compatible = "gpio-keys";
-        topsw: top_sw {
-            gpios = <&gpio0 4 GPIO_ACTIVE_LOW>;
-            label = "Top switch for locker, hooked to pin D8";
-        };
-        bottomsw: bottom_sw {
-            gpios = <&gpio0 2 GPIO_ACTIVE_LOW>;
-            label = "Bottom switch for locker, hooked to pin D6";
+        greenbtn: green_btn {
+            gpios = <&gpio0 4 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            label = "Green button on outside of case, hooked to pin D8";
         };
     };
 
