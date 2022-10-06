@@ -105,32 +105,32 @@ static uint8_t *uri_strip_leading_slash(uint8_t *uri, size_t *uri_len)
 	return uri;
 }
 
-int golioth_desired_update(const struct coap_packet *update,
-				  struct coap_reply *reply,
-				  const struct sockaddr *from)
+static int golioth_desired_update(struct golioth_req_rsp *rsp)
 {
-	struct dfu_ctx *dfu = &update_ctx;
-	struct coap_reply *fw_reply;
-	const uint8_t *payload;
-	uint16_t payload_len;
+	struct dfu_ctx *dfu = rsp->user_data;
 	size_t version_len = sizeof(dfu->version) - 1;
 	uint8_t uri[64];
 	uint8_t *uri_p;
 	size_t uri_len = sizeof(uri);
 	int err;
 
-	payload = coap_packet_get_payload(update, &payload_len);
-	if (!payload) {
-		LOG_ERR("No payload in CoAP!");
-		return -EIO;
+	if (rsp->err) {
+		LOG_ERR("Error while receiving desired FW update: %d", rsp->err);
+		return 0;
 	}
 
-	LOG_HEXDUMP_DBG(payload, payload_len, "Desired");
+	LOG_HEXDUMP_DBG(rsp->data, rsp->len, "Desired");
 
-	err = golioth_fw_desired_parse(payload, payload_len,
+	err = golioth_fw_desired_parse(rsp->data, rsp->len,
 				       dfu->version, &version_len,
 				       uri, &uri_len);
-	if (err) {
+	switch (err) {
+	case 0:
+		break;
+	case -ENOENT:
+		LOG_INF("No release rolled out yet");
+		return 0;
+	default:
 		LOG_ERR("Failed to parse desired version: %d", err);
 		return err;
 	}
@@ -140,14 +140,8 @@ int golioth_desired_update(const struct coap_packet *update,
 	if (version_len == strlen(current_version_str) &&
 	    !strncmp(current_version_str, dfu->version, version_len)) {
 		LOG_INF("Desired version (%s) matches current firmware version!",
-			log_strdup(current_version_str));
+			current_version_str);
 		return -EALREADY;
-	}
-
-	fw_reply = coap_reply_next_unused(coap_replies, ARRAY_SIZE(coap_replies));
-	if (!reply) {
-		LOG_ERR("No more reply handlers");
-		return -ENOMEM;
 	}
 
 	uri_p = uri_strip_leading_slash(uri, &uri_len);
@@ -161,8 +155,7 @@ int golioth_desired_update(const struct coap_packet *update,
 		LOG_ERR("Failed to update to '%s' state: %d", "downloading", err);
 	}
 
-	err = golioth_fw_download(client, &dfu->fw_ctx, uri_p, uri_len,
-				  fw_reply, data_received);
+	err = golioth_fw_download(client, uri_p, uri_len, data_received, dfu);
 	if (err) {
 		LOG_ERR("Failed to request firmware: %d", err);
 		return err;
@@ -170,6 +163,7 @@ int golioth_desired_update(const struct coap_packet *update,
 
 	return 0;
 }
+
 
 void ota_init (void) 
 {

@@ -254,7 +254,6 @@ enum golioth_settings_status on_setting(
 	return GOLIOTH_SETTINGS_KEY_NOT_RECOGNIZED;
 }
 
-
 static void golioth_on_connect(struct golioth_client *client)
 {
 	int err;
@@ -274,7 +273,7 @@ static void golioth_on_connect(struct golioth_client *client)
 		LOG_ERR("Failed to start observation of desired FW: %d", err);
 	}
 
-	
+
 	for (i = 0; i < ARRAY_SIZE(coap_replies); i++) {
 		coap_reply_clear(&coap_replies[i]);
 	}
