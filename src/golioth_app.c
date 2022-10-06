@@ -257,7 +257,6 @@ enum golioth_settings_status on_setting(
 
 static void golioth_on_connect(struct golioth_client *client)
 {
-	struct coap_reply *reply;
 	int err;
 	int i;
 
@@ -270,6 +269,12 @@ static void golioth_on_connect(struct golioth_client *client)
 		LOG_ERR("Failed to report firmware state: %d", err);
 	}
 
+	err = golioth_fw_observe_desired(client, golioth_desired_update, &update_ctx);
+	if (err) {
+		LOG_ERR("Failed to start observation of desired FW: %d", err);
+	}
+
+	
 	for (i = 0; i < ARRAY_SIZE(coap_replies); i++) {
 		coap_reply_clear(&coap_replies[i]);
 	}
