@@ -18,44 +18,51 @@ LOG_MODULE_REGISTER(ota_c, LOG_LEVEL_DBG);
 
 #define REBOOT_DELAY_SEC	1
 
+static void reboot_handler(struct k_work *work)
+{
+	sys_reboot(SYS_REBOOT_COLD);
+}
 
-extern struct coap_reply coap_replies[4];           // from golioth_app.c, needs to be refactored
+K_WORK_DELAYABLE_DEFINE(reboot_work, reboot_handler);
 
-enum golioth_dfu_result dfu_initial_result = GOLIOTH_DFU_RESULT_INITIAL;
+static struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
 
 struct dfu_ctx {
-	struct golioth_fw_download_ctx fw_ctx;
 	struct flash_img_context flash;
 	char version[65];
 };
 
 static struct dfu_ctx update_ctx;
+enum golioth_dfu_result dfu_initial_result = GOLIOTH_DFU_RESULT_INITIAL;
 
-
-static int data_received(struct golioth_blockwise_download_ctx *ctx,
-			 const uint8_t *data, size_t offset, size_t len,
-			 bool last)
+static int data_received(struct golioth_req_rsp *rsp)
 {
-	struct dfu_ctx *dfu = CONTAINER_OF(ctx, struct dfu_ctx, fw_ctx);
+	struct dfu_ctx *dfu = rsp->user_data;
+	bool last = rsp->get_next == NULL;
 	int err;
 
-	LOG_DBG("Received %zu bytes at offset %zu%s", len, offset,
+	if (rsp->err) {
+		LOG_ERR("Error while receiving FW data: %d", rsp->err);
+		return 0;
+	}
+
+	LOG_DBG("Received %zu bytes at offset %zu%s", rsp->len, rsp->off,
 		last ? " (last)" : "");
 
-	if (offset == 0) {
+	if (rsp->off == 0) {
 		err = flash_img_prepare(&dfu->flash);
 		if (err) {
 			return err;
 		}
 	}
 
-	err = flash_img_buffered_write(&dfu->flash, data, len, last);
+	err = flash_img_buffered_write(&dfu->flash, rsp->data, rsp->len, last);
 	if (err) {
 		LOG_ERR("Failed to write to flash: %d", err);
 		return err;
 	}
 
-	if (offset > 0 && last) {
+	if (last) {
 		err = golioth_fw_report_state(client, "main",
 					      current_version_str,
 					      dfu->version,
@@ -87,9 +94,11 @@ static int data_received(struct golioth_blockwise_download_ctx *ctx,
 		/* Synchronize logs */
 		LOG_PANIC();
 
-		k_sleep(K_SECONDS(REBOOT_DELAY_SEC));
+		k_work_schedule(&reboot_work, K_SECONDS(REBOOT_DELAY_SEC));
+	}
 
-		sys_reboot(SYS_REBOOT_COLD);
+	if (rsp->get_next) {
+		rsp->get_next(rsp->get_next_data, 0);
 	}
 
 	return 0;
