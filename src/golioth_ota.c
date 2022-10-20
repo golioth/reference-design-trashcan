@@ -8,31 +8,27 @@
 LOG_MODULE_REGISTER(ota_c, LOG_LEVEL_DBG);
 
 #include <net/golioth/fw.h>
-#include <zephyr/sys/reboot.h>
 #include <net/golioth/system_client.h>
-#include <logging/log_ctrl.h>			// to include LOG_PANIC
+#include <samples/common/net_connect.h>
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <zephyr/logging/log_ctrl.h>
+#include <zephyr/net/coap.h>
+#include <zephyr/sys/reboot.h>
 
 #include "flash.h"
 #include "golioth_ota.h"
 #include "golioth_app.h"
 
-#define REBOOT_DELAY_SEC	1
+K_SEM_DEFINE(sem_downloading, 0, 1);
+K_SEM_DEFINE(sem_downloaded, 0, 1);
 
-static void reboot_handler(struct k_work *work)
-{
-	sys_reboot(SYS_REBOOT_COLD);
-}
+#define REBOOT_DELAY_SEC 1
 
-K_WORK_DELAYABLE_DEFINE(reboot_work, reboot_handler);
+// struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
 
-static struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
-
-struct dfu_ctx {
-	struct flash_img_context flash;
-	char version[65];
-};
-
-static struct dfu_ctx update_ctx;
+struct dfu_ctx update_ctx;
 enum golioth_dfu_result dfu_initial_result = GOLIOTH_DFU_RESULT_INITIAL;
 
 static int data_received(struct golioth_req_rsp *rsp)
@@ -41,63 +37,38 @@ static int data_received(struct golioth_req_rsp *rsp)
 	bool last = rsp->get_next == NULL;
 	int err;
 
-	if (rsp->err) {
+	if (rsp->err)
+	{
 		LOG_ERR("Error while receiving FW data: %d", rsp->err);
 		return 0;
 	}
 
 	LOG_DBG("Received %zu bytes at offset %zu%s", rsp->len, rsp->off,
-		last ? " (last)" : "");
+			last ? " (last)" : "");
 
-	if (rsp->off == 0) {
+	if (rsp->off == 0)
+	{
 		err = flash_img_prepare(&dfu->flash);
-		if (err) {
+		if (err)
+		{
 			return err;
 		}
 	}
 
 	err = flash_img_buffered_write(&dfu->flash, rsp->data, rsp->len, last);
-	if (err) {
+	if (err)
+	{
 		LOG_ERR("Failed to write to flash: %d", err);
 		return err;
 	}
 
-	if (last) {
-		err = golioth_fw_report_state(client, "main",
-					      current_version_str,
-					      dfu->version,
-					      GOLIOTH_FW_STATE_DOWNLOADED,
-					      GOLIOTH_DFU_RESULT_INITIAL);
-		if (err) {
-			LOG_ERR("Failed to update to '%s' state: %d", "downloaded", err);
-		}
-
-		err = golioth_fw_report_state(client, "main",
-					      current_version_str,
-					      dfu->version,
-					      GOLIOTH_FW_STATE_UPDATING,
-					      GOLIOTH_DFU_RESULT_INITIAL);
-		if (err) {
-			LOG_ERR("Failed to update to '%s' state: %d", "updating", err);
-		}
-
-		LOG_INF("Requesting upgrade");
-
-		err = boot_request_upgrade(BOOT_UPGRADE_TEST);
-		if (err) {
-			LOG_ERR("Failed to request upgrade: %d", err);
-			return err;
-		}
-
-		LOG_INF("Rebooting in %d second(s)", REBOOT_DELAY_SEC);
-
-		/* Synchronize logs */
-		LOG_PANIC();
-
-		k_work_schedule(&reboot_work, K_SECONDS(REBOOT_DELAY_SEC));
+	if (last)
+	{
+		k_sem_give(&sem_downloaded);
 	}
 
-	if (rsp->get_next) {
+	if (rsp->get_next)
+	{
 		rsp->get_next(rsp->get_next_data, 0);
 	}
 
@@ -106,7 +77,8 @@ static int data_received(struct golioth_req_rsp *rsp)
 
 static uint8_t *uri_strip_leading_slash(uint8_t *uri, size_t *uri_len)
 {
-	if (*uri_len > 0 && uri[0] == '/') {
+	if (*uri_len > 0 && uri[0] == '/')
+	{
 		(*uri_len)--;
 		return &uri[1];
 	}
@@ -114,7 +86,7 @@ static uint8_t *uri_strip_leading_slash(uint8_t *uri, size_t *uri_len)
 	return uri;
 }
 
-static int golioth_desired_update(struct golioth_req_rsp *rsp)
+int golioth_desired_update(struct golioth_req_rsp *rsp)
 {
 	struct dfu_ctx *dfu = rsp->user_data;
 	size_t version_len = sizeof(dfu->version) - 1;
@@ -123,7 +95,8 @@ static int golioth_desired_update(struct golioth_req_rsp *rsp)
 	size_t uri_len = sizeof(uri);
 	int err;
 
-	if (rsp->err) {
+	if (rsp->err)
+	{
 		LOG_ERR("Error while receiving desired FW update: %d", rsp->err);
 		return 0;
 	}
@@ -131,9 +104,10 @@ static int golioth_desired_update(struct golioth_req_rsp *rsp)
 	LOG_HEXDUMP_DBG(rsp->data, rsp->len, "Desired");
 
 	err = golioth_fw_desired_parse(rsp->data, rsp->len,
-				       dfu->version, &version_len,
-				       uri, &uri_len);
-	switch (err) {
+								   dfu->version, &version_len,
+								   uri, &uri_len);
+	switch (err)
+	{
 	case 0:
 		break;
 	case -ENOENT:
@@ -147,25 +121,20 @@ static int golioth_desired_update(struct golioth_req_rsp *rsp)
 	dfu->version[version_len] = '\0';
 
 	if (version_len == strlen(current_version_str) &&
-	    !strncmp(current_version_str, dfu->version, version_len)) {
+		!strncmp(current_version_str, dfu->version, version_len))
+	{
 		LOG_INF("Desired version (%s) matches current firmware version!",
-			current_version_str);
+				current_version_str);
 		return -EALREADY;
 	}
 
 	uri_p = uri_strip_leading_slash(uri, &uri_len);
 
-	err = golioth_fw_report_state(client, "main",
-				      current_version_str,
-				      dfu->version,
-				      GOLIOTH_FW_STATE_DOWNLOADING,
-				      GOLIOTH_DFU_RESULT_INITIAL);
-	if (err) {
-		LOG_ERR("Failed to update to '%s' state: %d", "downloading", err);
-	}
+	k_sem_give(&sem_downloading);
 
 	err = golioth_fw_download(client, uri_p, uri_len, data_received, dfu);
-	if (err) {
+	if (err)
+	{
 		LOG_ERR("Failed to request firmware: %d", err);
 		return err;
 	}
@@ -173,13 +142,12 @@ static int golioth_desired_update(struct golioth_req_rsp *rsp)
 	return 0;
 }
 
-
-void ota_init (void) 
+void ota_img_confirm(void)
 {
-	
 	int err;
 
-    if (!boot_is_img_confirmed()) {
+	if (!boot_is_img_confirmed())
+	{
 		/*
 		 * There is no shared context between previous update request
 		 * and current boot, so treat current image 'confirmed' flag as
@@ -189,9 +157,70 @@ void ota_init (void)
 		dfu_initial_result = GOLIOTH_DFU_RESULT_FIRMWARE_UPDATED_SUCCESSFULLY;
 
 		err = boot_write_img_confirmed();
-		if (err) {
+		if (err)
+		{
 			LOG_ERR("Failed to confirm image: %d", err);
 		}
 	}
 }
 
+void ota_init(void)
+{
+
+	// err = golioth_fw_report_state(client, "main",
+	// 			      current_version_str,
+	// 			      NULL,
+	// 			      GOLIOTH_FW_STATE_IDLE,
+	// 			      dfu_initial_result);
+	// if (err) {
+	// 	LOG_ERR("Failed to report firmware state: %d", err);
+	// }
+
+	// k_sem_take(&sem_downloading, K_FOREVER);
+
+	// err = golioth_fw_report_state(client, "main",
+	// 			      current_version_str,
+	// 			      update_ctx.version,
+	// 			      GOLIOTH_FW_STATE_DOWNLOADING,
+	// 			      GOLIOTH_DFU_RESULT_INITIAL);
+	// if (err) {
+	// 	LOG_ERR("Failed to update to '%s' state: %d", "downloading", err);
+	// }
+
+	// k_sem_take(&sem_downloaded, K_FOREVER);
+
+	// err = golioth_fw_report_state(client, "main",
+	// 			      current_version_str,
+	// 			      update_ctx.version,
+	// 			      GOLIOTH_FW_STATE_DOWNLOADED,
+	// 			      GOLIOTH_DFU_RESULT_INITIAL);
+	// if (err) {
+	// 	LOG_ERR("Failed to update to '%s' state: %d", "downloaded", err);
+	// }
+
+	// err = golioth_fw_report_state(client, "main",
+	// 			      current_version_str,
+	// 			      update_ctx.version,
+	// 			      GOLIOTH_FW_STATE_UPDATING,
+	// 			      GOLIOTH_DFU_RESULT_INITIAL);
+	// if (err) {
+	// 	LOG_ERR("Failed to update to '%s' state: %d", "updating", err);
+	// }
+
+	// LOG_INF("Requesting upgrade");
+
+	// err = boot_request_upgrade(BOOT_UPGRADE_TEST);
+	// if (err) {
+	// 	LOG_ERR("Failed to request upgrade: %d", err);
+	// 	return;
+	// }
+
+	// LOG_INF("Rebooting in %d second(s)", REBOOT_DELAY_SEC);
+
+	// /* Synchronize logs */
+	// LOG_PANIC();
+
+	// k_sleep(K_SECONDS(REBOOT_DELAY_SEC));
+
+	// sys_reboot(SYS_REBOOT_COLD);
+}

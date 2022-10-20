@@ -347,9 +347,9 @@ void main(void)
 {
 
 	LOG_DBG("Start Vertical Trashcan sample");
-
-	ota_init();
+	// ota_img_confirm();
 	app_init();
+	// ota_init();
 	sensor_init();
 	button_init();
 

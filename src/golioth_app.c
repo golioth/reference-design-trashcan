@@ -270,19 +270,10 @@ static void golioth_on_connect(struct golioth_client *client)
 
 	k_sem_give(&sem_connected);
 
-	// err = golioth_fw_report_state(client, "main",
-	// 			      current_version_str,
-	// 			      NULL,
-	// 			      GOLIOTH_FW_STATE_IDLE,
-	// 			      dfu_initial_result);
-	// if (err) {
-	// 	LOG_ERR("Failed to report firmware state: %d", err);
-	// }
-
-	// err = golioth_fw_observe_desired(client, golioth_desired_update, &update_ctx);
-	// if (err) {
-	// 	LOG_ERR("Failed to start observation of desired FW: %d", err);
-	// }
+	err = golioth_fw_observe_desired(client, golioth_desired_update, &update_ctx);
+	if (err) {
+		LOG_ERR("Failed to start observation of desired FW: %d", err);
+	}
 
 	if (IS_ENABLED(CONFIG_GOLIOTH_SETTINGS)) 
 	{
