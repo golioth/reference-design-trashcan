@@ -10,7 +10,6 @@ LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_INF);
 #include <zephyr/net/coap.h>
 
 #include <net/golioth/system_client.h>
-#include <samples/common/wifi.h>
 
 
 #include <stdlib.h>
@@ -23,7 +22,7 @@ LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_INF);
 
 
 #include <zephyr/drivers/sensor.h>
-#include <device.h>
+#include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 
 #define DEBOUNCE_TIMEOUT_MS 50
@@ -350,12 +349,6 @@ void main(void)
 	LOG_DBG("Start Vertical Trashcan sample");
 
 	ota_init();
-
-	if (IS_ENABLED(CONFIG_GOLIOTH_SAMPLE_WIFI)) {
-		LOG_INF("Connecting to WiFi");
-		wifi_connect();
-	}
-
 	app_init();
 	sensor_init();
 	button_init();
