@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_INF);
 
-#include <net/coap.h>
+#include <zephyr/net/coap.h>
 
 #include <net/golioth/system_client.h>
 #include <samples/common/wifi.h>
@@ -15,14 +15,14 @@ LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_INF);
 
 #include <stdlib.h>
 #include <stdio.h>
-//#include <sys/reboot.h>
+//#include <zephyr/sys/reboot.h>
 
 #include "golioth_app.h"
 #include "golioth_ota.h"
 #include "main.h"
 
 
-#include <drivers/sensor.h>
+#include <zephyr/drivers/sensor.h>
 #include <device.h>
 #include <zephyr/drivers/gpio.h>
 

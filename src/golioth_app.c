@@ -5,7 +5,7 @@
  */
 
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(golioth_app_c, LOG_LEVEL_INF);
 
 #include <net/golioth/system_client.h>

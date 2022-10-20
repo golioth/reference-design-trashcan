@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(ota_c, LOG_LEVEL_DBG);
 
 #include <net/golioth/fw.h>
-#include <sys/reboot.h>
+#include <zephyr/sys/reboot.h>
 #include <net/golioth/system_client.h>
 #include <logging/log_ctrl.h>			// to include LOG_PANIC
 
