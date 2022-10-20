@@ -18,11 +18,9 @@ LOG_MODULE_REGISTER(golioth_app_c, LOG_LEVEL_INF);
 #include "golioth_ota.h"
 #include "golioth_app.h"
 
+K_SEM_DEFINE(sem_connected, 0, 1);
 
 struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
-
-struct coap_reply coap_replies[4]; // TODO: Refactor to remove coap_reply global variable
-
 
 extern char current_version_str[sizeof("255.255.65535")];	//TODO: refactor to remove link to flash.c
 extern enum golioth_dfu_result dfu_initial_result; //TODO: refactor to remove link to golioth_ota.c
@@ -254,39 +252,37 @@ enum golioth_settings_status on_setting(
 	return GOLIOTH_SETTINGS_KEY_NOT_RECOGNIZED;
 }
 
+
+static int lightdb_error_handler(struct golioth_req_rsp *rsp)
+{
+	if (rsp->err) {
+		LOG_WRN("Failed to set lightdb: %d", rsp->err);
+		return rsp->err;
+	}
+
+	return 0;
+}
+
 static void golioth_on_connect(struct golioth_client *client)
 {
 	int err;
 	int i;
 
-	err = golioth_fw_report_state(client, "main",
-				      current_version_str,
-				      NULL,
-				      GOLIOTH_FW_STATE_IDLE,
-				      dfu_initial_result);
-	if (err) {
-		LOG_ERR("Failed to report firmware state: %d", err);
-	}
+	k_sem_give(&sem_connected);
 
-	err = golioth_fw_observe_desired(client, golioth_desired_update, &update_ctx);
-	if (err) {
-		LOG_ERR("Failed to start observation of desired FW: %d", err);
-	}
+	// err = golioth_fw_report_state(client, "main",
+	// 			      current_version_str,
+	// 			      NULL,
+	// 			      GOLIOTH_FW_STATE_IDLE,
+	// 			      dfu_initial_result);
+	// if (err) {
+	// 	LOG_ERR("Failed to report firmware state: %d", err);
+	// }
 
-
-	for (i = 0; i < ARRAY_SIZE(coap_replies); i++) {
-		coap_reply_clear(&coap_replies[i]);
-	}
-
-	reply = coap_reply_next_unused(coap_replies, ARRAY_SIZE(coap_replies));
-	if (!reply) {
-		LOG_ERR("No more reply handlers");
-	}
-
-	err = golioth_fw_observe_desired(client, reply, golioth_desired_update);
-	if (err) {
-		coap_reply_clear(reply);
-	}
+	// err = golioth_fw_observe_desired(client, golioth_desired_update, &update_ctx);
+	// if (err) {
+	// 	LOG_ERR("Failed to start observation of desired FW: %d", err);
+	// }
 
 	if (IS_ENABLED(CONFIG_GOLIOTH_SETTINGS)) 
 	{
@@ -297,21 +293,6 @@ static void golioth_on_connect(struct golioth_client *client)
 			LOG_ERR("Failed to register settings callback: %d", err);
 		}
 	}
-}
-
-static void golioth_on_message(struct golioth_client *client,
-			       struct coap_packet *rx)
-{
-	uint16_t payload_len;
-	const uint8_t *payload;
-	uint8_t type;
-
-	type = coap_header_get_type(rx);
-	payload = coap_packet_get_payload(rx, &payload_len);
-
-	(void)coap_response_received(rx, NULL, coap_replies,
-				     ARRAY_SIZE(coap_replies));
-
 }
 
 void golioth_lightdb_stream_handler(struct k_work *work) 
@@ -327,19 +308,16 @@ void golioth_lightdb_stream_handler(struct k_work *work)
 		LOG_DBG("Error getting data from the queue: %d\n", err);	
 	}
 	
-	// LOG_DBG("Sending to LightDB Stream: %s", log_strdup(stream_data));
-	
-	err = golioth_lightdb_set(client,
-					GOLIOTH_LIGHTDB_STREAM_PATH("sensor"),
-					COAP_CONTENT_FORMAT_TEXT_PLAIN,
-					stream_data, 
-					strlen(stream_data));
+	err = golioth_stream_push_cb(client, "sensor",
+				     GOLIOTH_CONTENT_FORMAT_APP_JSON,
+				     stream_data, strlen(stream_data),
+				     lightdb_error_handler, NULL);
 	if (err) {
-		LOG_WRN("Failed to send sensor: %d", err);
-		printk("Failed to send sensor: %d\n", err);	
+		LOG_WRN("Failed to send sensor data: %d", err);
+		return;
 	}
 
-	LOG_DBG("Sent the following to LightDB Stream: %s", log_strdup(stream_data));
+	LOG_DBG("Sent the following to LightDB Stream: %s", stream_data);
 
 }
 
@@ -411,6 +389,8 @@ double get_z_threshold(void)
 void app_init(void)
 {
 	client->on_connect = golioth_on_connect;
-	client->on_message = golioth_on_message;
 	golioth_system_client_start();
+	LOG_INF("Waiting for Golioth connection");
+	k_sem_take(&sem_connected, K_FOREVER);
+	LOG_INF("Connected to Golioth");
 }
