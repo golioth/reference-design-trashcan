@@ -5,7 +5,7 @@
  */
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_DBG);
 
 #include <zephyr/net/coap.h>
 
@@ -345,13 +345,13 @@ void restart_timer(void)
 
 void main(void)
 {
-
+	printk("test");
 	LOG_DBG("Start Vertical Trashcan sample");
 	// ota_img_confirm();
 	app_init();
 	// ota_init();
-	sensor_init();
-	button_init();
+	// sensor_init();
+	// button_init();
 
 	uint32_t timer_interval = get_sensor_interval();
 	LOG_INF("Starting timer with interval of %d seconds", timer_interval);

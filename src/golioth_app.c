@@ -266,7 +266,6 @@ static int lightdb_error_handler(struct golioth_req_rsp *rsp)
 static void golioth_on_connect(struct golioth_client *client)
 {
 	int err;
-	int i;
 
 	k_sem_give(&sem_connected);
 
