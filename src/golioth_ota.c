@@ -167,60 +167,60 @@ void ota_img_confirm(void)
 void ota_init(void)
 {
 
-	// err = golioth_fw_report_state(client, "main",
-	// 			      current_version_str,
-	// 			      NULL,
-	// 			      GOLIOTH_FW_STATE_IDLE,
-	// 			      dfu_initial_result);
-	// if (err) {
-	// 	LOG_ERR("Failed to report firmware state: %d", err);
-	// }
+	err = golioth_fw_report_state(client, "main",
+				      current_version_str,
+				      NULL,
+				      GOLIOTH_FW_STATE_IDLE,
+				      dfu_initial_result);
+	if (err) {
+		LOG_ERR("Failed to report firmware state: %d", err);
+	}
 
-	// k_sem_take(&sem_downloading, K_FOREVER);
+	k_sem_take(&sem_downloading, K_FOREVER);
 
-	// err = golioth_fw_report_state(client, "main",
-	// 			      current_version_str,
-	// 			      update_ctx.version,
-	// 			      GOLIOTH_FW_STATE_DOWNLOADING,
-	// 			      GOLIOTH_DFU_RESULT_INITIAL);
-	// if (err) {
-	// 	LOG_ERR("Failed to update to '%s' state: %d", "downloading", err);
-	// }
+	err = golioth_fw_report_state(client, "main",
+				      current_version_str,
+				      update_ctx.version,
+				      GOLIOTH_FW_STATE_DOWNLOADING,
+				      GOLIOTH_DFU_RESULT_INITIAL);
+	if (err) {
+		LOG_ERR("Failed to update to '%s' state: %d", "downloading", err);
+	}
 
-	// k_sem_take(&sem_downloaded, K_FOREVER);
+	k_sem_take(&sem_downloaded, K_FOREVER);
 
-	// err = golioth_fw_report_state(client, "main",
-	// 			      current_version_str,
-	// 			      update_ctx.version,
-	// 			      GOLIOTH_FW_STATE_DOWNLOADED,
-	// 			      GOLIOTH_DFU_RESULT_INITIAL);
-	// if (err) {
-	// 	LOG_ERR("Failed to update to '%s' state: %d", "downloaded", err);
-	// }
+	err = golioth_fw_report_state(client, "main",
+				      current_version_str,
+				      update_ctx.version,
+				      GOLIOTH_FW_STATE_DOWNLOADED,
+				      GOLIOTH_DFU_RESULT_INITIAL);
+	if (err) {
+		LOG_ERR("Failed to update to '%s' state: %d", "downloaded", err);
+	}
 
-	// err = golioth_fw_report_state(client, "main",
-	// 			      current_version_str,
-	// 			      update_ctx.version,
-	// 			      GOLIOTH_FW_STATE_UPDATING,
-	// 			      GOLIOTH_DFU_RESULT_INITIAL);
-	// if (err) {
-	// 	LOG_ERR("Failed to update to '%s' state: %d", "updating", err);
-	// }
+	err = golioth_fw_report_state(client, "main",
+				      current_version_str,
+				      update_ctx.version,
+				      GOLIOTH_FW_STATE_UPDATING,
+				      GOLIOTH_DFU_RESULT_INITIAL);
+	if (err) {
+		LOG_ERR("Failed to update to '%s' state: %d", "updating", err);
+	}
 
-	// LOG_INF("Requesting upgrade");
+	LOG_INF("Requesting upgrade");
 
-	// err = boot_request_upgrade(BOOT_UPGRADE_TEST);
-	// if (err) {
-	// 	LOG_ERR("Failed to request upgrade: %d", err);
-	// 	return;
-	// }
+	err = boot_request_upgrade(BOOT_UPGRADE_TEST);
+	if (err) {
+		LOG_ERR("Failed to request upgrade: %d", err);
+		return;
+	}
 
-	// LOG_INF("Rebooting in %d second(s)", REBOOT_DELAY_SEC);
+	LOG_INF("Rebooting in %d second(s)", REBOOT_DELAY_SEC);
 
-	// /* Synchronize logs */
-	// LOG_PANIC();
+	/* Synchronize logs */
+	LOG_PANIC();
 
-	// k_sleep(K_SECONDS(REBOOT_DELAY_SEC));
+	k_sleep(K_SECONDS(REBOOT_DELAY_SEC));
 
-	// sys_reboot(SYS_REBOOT_COLD);
+	sys_reboot(SYS_REBOOT_COLD);
 }
