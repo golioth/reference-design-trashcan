@@ -30,7 +30,7 @@ LOG_MODULE_REGISTER(trashcan_main, LOG_LEVEL_DBG);
 
 int counter = 0;
 
-struct device *voc_sensor;
+// struct device *voc_sensor;
 struct device *imu_sensor;
 struct device *weather_sensor;
 struct device *distance_sensor;
@@ -65,8 +65,8 @@ void my_sensorstream_work_handler(struct k_work *work)
 	struct sensor_value accel_x;
 	struct sensor_value accel_y;
 	struct sensor_value accel_z;
-	struct sensor_value co2;
-	struct sensor_value voc;
+	// struct sensor_value co2;
+	// struct sensor_value voc;
 	struct sensor_value distance;
 	struct sensor_value prox;
 	double trash_level = 0;
@@ -98,13 +98,13 @@ void my_sensorstream_work_handler(struct k_work *work)
 	LOG_DBG("  Humidity is %d.%06d", humidity.val1, abs(humidity.val2));
 
 
-	// kick off a VOC sensor reading!
-	LOG_DBG("Fetching VOC Reading");
-	sensor_sample_fetch(voc_sensor);
-	sensor_channel_get(voc_sensor, SENSOR_CHAN_CO2, &co2);
-	LOG_DBG("  co2 is %d.%06d", co2.val1, abs(co2.val2));
-	sensor_channel_get(voc_sensor, SENSOR_CHAN_VOC, &voc);
-	LOG_DBG("  voc is %d.%06d", voc.val1, abs(voc.val2));
+	// // kick off a VOC sensor reading!
+	// LOG_DBG("Fetching VOC Reading");
+	// sensor_sample_fetch(voc_sensor);
+	// sensor_channel_get(voc_sensor, SENSOR_CHAN_CO2, &co2);
+	// LOG_DBG("  co2 is %d.%06d", co2.val1, abs(co2.val2));
+	// sensor_channel_get(voc_sensor, SENSOR_CHAN_VOC, &voc);
+	// LOG_DBG("  voc is %d.%06d", voc.val1, abs(voc.val2));
 
 	// kick off a distance sensor reading!
 	LOG_DBG("Fetching Distance Reading");
@@ -180,7 +180,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 
 
 	snprintk(sbuf, sizeof(sbuf) - 1,
-			"{\"imu\":{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f,\"orientation\":\"%s\"},\"weather\":{\"temp\":%f,\"pressure\":%f,\"humidity\":%f},\"gas\":{\"co2\":%f,\"voc\":%f},\"distance\":{\"distance\":%f,\"prox\":%f,\"level\":%f}}",
+			"{\"imu\":{\"accel_x\":%f,\"accel_y\":%f,\"accel_z\":%f,\"orientation\":\"%s\"},\"weather\":{\"temp\":%f,\"pressure\":%f,\"humidity\":%f},\"gas\":{\"co2\":\"sensordead\",\"voc\":\"sensordead\"},\"distance\":{\"distance\":%f,\"prox\":%f,\"level\":%f}}",
 			sensor_value_to_double(&accel_x),
 			sensor_value_to_double(&accel_y),
 			sensor_value_to_double(&accel_z),
@@ -188,8 +188,8 @@ void my_sensorstream_work_handler(struct k_work *work)
 			sensor_value_to_double(&temp),
 			sensor_value_to_double(&pressure),
 			sensor_value_to_double(&humidity),
-			sensor_value_to_double(&co2),
-			sensor_value_to_double(&voc),
+			// sensor_value_to_double(&co2),
+			// sensor_value_to_double(&voc),
 			sensor_value_to_double(&distance),
 			sensor_value_to_double(&prox),
 			trash_level
@@ -268,13 +268,13 @@ void button_init(void)
 void sensor_init(void)
 {
 
-	LOG_DBG("CCS811 Init");
-	voc_sensor = (void *)DEVICE_DT_GET_ANY(ams_ccs811);
+	// LOG_DBG("CCS811 Init");
+	// voc_sensor = (void *)DEVICE_DT_GET_ANY(ams_ccs811);
 
-    if (voc_sensor == NULL) {
-        printk("Could not get ccs811 device\n");
-        return;
-    }
+    // if (voc_sensor == NULL) {
+    //     printk("Could not get ccs811 device\n");
+    //     return;
+    // }
 
 	LOG_DBG("LIS2DH Init");
 	imu_sensor = (void *)DEVICE_DT_GET_ANY(st_lis2dh);
