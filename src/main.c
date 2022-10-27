@@ -163,24 +163,13 @@ void my_sensorstream_work_handler(struct k_work *work)
 	// Bucket the Z accelerometer reading
 	double z_orientation = sensor_value_to_double(&accel_z);
 	LOG_DBG("Z accel is %f and the Threshhold is %f", z_orientation, get_z_threshold());
-	if (z_orientation>=0)
+	if (z_orientation > MIN_Z_THRESHOLD)
 	{
-		if (z_orientation > (double)get_z_threshold() && z_orientation > MIN_Z_THRESHOLD)
+		if (z_orientation < (double)get_z_threshold())
 		{
 			orientation = "upright";	
 		}
-		else if (z_orientation < (double)get_z_threshold() && z_orientation < MAX_Z_THRESHOLD)
-		{
-			orientation = "tipped";
-		}
-	}
-	else if (z_orientation<0)		// Need to change math for negative orientation
-	{
-		if (z_orientation < (double)get_z_threshold() && z_orientation < MIN_Z_THRESHOLD)
-		{
-			orientation = "upright";	
-		}
-		else if (z_orientation > (double)get_z_threshold() && z_orientation > MAX_Z_THRESHOLD)
+		else if (z_orientation > (double)get_z_threshold())
 		{
 			orientation = "tipped";
 		}
@@ -188,7 +177,7 @@ void my_sensorstream_work_handler(struct k_work *work)
 	else
 	{
 		orientation = "error";
-		LOG_ERR("Your math or your Z_Threshold limits are wrong. Check settings.");
+		LOG_ERR("Accelerometer outside of threshold limits.");
 	}
 	LOG_INF("Orientation is %s", orientation);
 
