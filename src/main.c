@@ -345,12 +345,11 @@ void restart_timer(void)
 
 void main(void)
 {
-	printk("test");
 	LOG_DBG("Start Vertical Trashcan sample");
-	// ota_img_confirm();
+	ota_img_confirm();
 	app_init();
-	// ota_init();
-	// sensor_init();
+	ota_init();
+	sensor_init();
 	// button_init();
 
 	uint32_t timer_interval = get_sensor_interval();
