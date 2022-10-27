@@ -364,7 +364,7 @@ void main(void)
 	app_init();
 	ota_init();
 	sensor_init();
-	// button_init();
+	button_init();
 
 	uint32_t timer_interval = get_sensor_interval();
 	LOG_INF("Starting timer with interval of %d seconds", timer_interval);
