@@ -4,4 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-void wake_system_thread(void);
+/ {
+	aliases {
+		golioth-led = &led2;
+	};
+};
