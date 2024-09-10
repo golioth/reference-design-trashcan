@@ -19,9 +19,6 @@ LOG_MODULE_REGISTER(app_sensors, LOG_LEVEL_DBG);
 #include "app_sensors.h"
 #include "app_settings.h"
 
-#ifdef CONFIG_LIB_OSTENTUS
-#include <libostentus.h>
-#endif
 #ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 #include "battery_monitor/battery.h"
 #endif
