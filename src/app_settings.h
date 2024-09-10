@@ -22,6 +22,7 @@
 #include <golioth/client.h>
 
 int32_t get_loop_delay_s(void);
+int32_t get_trash_can_heigth_s(void);
 int app_settings_register(struct golioth_client *client);
 
 #endif /* __APP_SETTINGS_H__ */
