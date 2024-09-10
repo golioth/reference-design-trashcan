@@ -19,6 +19,7 @@ manifest:
           - zephyr
           - cmsis
           - hal_nordic
+          - hal_st
           - mbedtls
           - mbedtls-nrf
           - mcuboot
