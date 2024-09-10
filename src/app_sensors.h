@@ -22,27 +22,8 @@
 
 #include <golioth/client.h>
 
+void app_sensors_init(void);
 void app_sensors_set_client(struct golioth_client *sensors_client);
 void app_sensors_read_and_stream(void);
-
-#define LABEL_UP_COUNTER "Counter"
-#define LABEL_DN_COUNTER "Anti-counter"
-#define LABEL_BATTERY	 "Battery"
-#define LABEL_FIRMWARE	 "Firmware"
-#define SUMMARY_TITLE	 "Counters:"
-
-/**
- * Each Ostentus slide needs a unique key. You may add additional slides by
- * inserting elements with the name of your choice to this enum.
- */
-typedef enum {
-	UP_COUNTER,
-	DN_COUNTER,
-#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
-	BATTERY_V,
-	BATTERY_LVL,
-#endif
-	FIRMWARE
-} slide_key;
 
 #endif /* __APP_SENSORS_H__ */
