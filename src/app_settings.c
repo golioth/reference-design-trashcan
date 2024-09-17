@@ -41,7 +41,7 @@ static enum golioth_settings_status on_loop_delay_setting(int32_t new_value, voi
 static enum golioth_settings_status on_trash_can_height_setting(int32_t new_value, void *arg)
 {
 	_trash_can_height_s = new_value;
-	LOG_INF("Set trash can height to %i milimeters", new_value);
+	LOG_INF("Set trash can height to %i millimeters", new_value);
 	wake_system_thread();
 	return GOLIOTH_SETTINGS_SUCCESS;
 }
