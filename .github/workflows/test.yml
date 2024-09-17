@@ -13,5 +13,5 @@ jobs:
     uses: ./.github/workflows/build_zephyr.yml
     with:
       ZEPHYR_SDK: 0.16.3
-      BOARD: aludel_mini/nrf9160/ns
+      BOARD: aludel_elixir/nrf9160/ns
       ARTIFACT: false
