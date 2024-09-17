@@ -2,16 +2,55 @@
    Copyright (c) 2024 Golioth, Inc.
    SPDX-License-Identifier: Apache-2.0
 
-Golioth Reference Design Template
-#################################
+Golioth Trashcan Monitor Reference Design
+#########################################
 
 Overview
 ********
 
-Use this repo as a template when beginning work on a new Golioth Reference
-Design. It is set up as a standalone repository, with all Golioth features
-implemented in basic form. Search the project for the word ``template`` and
-``rd_template`` and update those occurrences with your reference design's name.
+This reference design outlines a solution for remotely monitoring trash
+receptacles, specifically tailored for municipalities looking to optimize waste
+management. The system is designed to track and report the fill levels and
+conditions of various trash bins at regular, programmable intervals. This data
+can help municipalities make informed decisions about waste collection,
+reducing unnecessary pickups and improving efficiency.
+
+A key feature of this design is its emphasis on long battery life, as the
+monitoring device is intended to be powered by batteries. To maximize
+operational efficiency, the device is engineered to minimize power consumption,
+ensuring that the batteries can last as long as possible before needing
+replacement or recharge. This makes it a cost-effective and low-maintenance
+solution for cities aiming to streamline waste collection while conserving
+resources. Additionally, the design supports adaptability, allowing
+customization of reporting intervals to suit the specific needs and constraints
+of the municipality.
+
+Supported Hardware
+******************
+
+This firmware can be built for a variety of supported hardware platforms.
+
+.. pull-quote::
+   [!IMPORTANT]
+
+   In Zephyr, each of these different hardware variants is given a unique
+   "board" identifier, which is used by the build system to generate firmware
+   for that variant.
+
+   When building firmware using the instructions below, make sure to use the
+   correct Zephyr board identifier that corresponds to your follow-along
+   hardware platform.
+
+.. list-table:: **Custom Golioth Hardware**
+   :header-rows: 1
+
+   * - Hardware
+     - Zephyr Board
+     - Project Page
+   * - .. image:: images/trashcan-monitor-old.jpg
+          :width: 240
+     - ``aludel_elixir/nrf9160/ns``
+     - `Trashcan Monitor Project Page`_
 
 Local set up
 ************
@@ -28,9 +67,9 @@ Install the Python virtual environment (recommended)
 .. code-block:: shell
 
    cd ~
-   mkdir golioth-reference-design-template
-   python -m venv golioth-reference-design-template/.venv
-   source golioth-reference-design-template/.venv/bin/activate
+   mkdir golioth-reference-design-trashcan
+   python -m venv golioth-reference-design-trashcan/.venv
+   source golioth-reference-design-trashcan/.venv/bin/activate
    pip install wheel west
 
 Use ``west`` to initialize and install
@@ -38,8 +77,8 @@ Use ``west`` to initialize and install
 
 .. code-block:: shell
 
-   cd ~/golioth-reference-design-template
-   west init -m git@github.com:golioth/reference-design-template.git .
+   cd ~/golioth-reference-design-trashcan
+   west init -m git@github.com:golioth/reference-design-trashcan.git .
    west update
    west zephyr-export
    pip install -r deps/zephyr/scripts/requirements.txt
@@ -47,13 +86,12 @@ Use ``west`` to initialize and install
 Building the application
 ************************
 
-Build the Zephyr sample application for the `Nordic nRF9160 DK`_
-(``nrf9160dk_nrf9160_ns``) from the top level of your project. After a
-successful build you will see a new ``build`` directory. Note that any changes
-(and git commits) to the project itself will be inside the ``app`` folder. The
-``build`` and ``deps`` directories being one level higher prevents the repo from
-cataloging all of the changes to the dependencies and the build (so no
-``.gitignore`` is needed).
+Build the Zephyr sample application for the Aludel Elixir from the top level of
+your project. After a successful build you will see a new ``build`` directory.
+Note that any changes (and git commits) to the project itself will be inside the
+``app`` folder. The ``build`` and ``deps`` directories being one level higher
+prevents the repo from cataloging all of the changes to the dependencies and the
+build (so no ``.gitignore`` is needed).
 
 Prior to building, update ``VERSION`` file to reflect the firmware version number you want to assign
 to this build. Then run the following commands to build and program the firmware onto the device.
@@ -67,7 +105,7 @@ to this build. Then run the following commands to build and program the firmware
 
 .. code-block:: text
 
-   $ (.venv) west build -p -b nrf9160dk/nrf9160/ns app
+   $ (.venv) west build -p -b aludel_elixir/nrf9160/ns app
    $ (.venv) west flash
 
 Configure PSK-ID and PSK using the device shell based on your Golioth
@@ -115,6 +153,11 @@ The following settings should be set in the Device Settings menu of the
 
    Default value is ``60`` seconds.
 
+``TRASH_CAN_HEIGHT_MM``
+   Set the trashcan height. Set to an integer value (millimeters).
+
+   Default value is ``500`` millimeters.
+
 Remote Procedure Call (RPC) Service
 ===================================
 
@@ -145,9 +188,25 @@ LightDB State and LightDB Stream data
 Time-Series Data (LightDB Stream)
 ---------------------------------
 
-An up-counting timer is periodically sent to the ``sensor/counter`` endpoint of the
-LightDB Stream service to simulate sensor data. If your board includes a
-battery, voltage and level readings will be sent to the ``battery`` endpoint.
+Sensor data is periodically sent to the following endpoints of the LightDB
+Stream service:
+
+* ``weather/gas/co2``: Carbon Dioxide(ppm)
+* ``weather/gas/voc``: Volatile Organic Compounds (ppb)
+* ``weather/humidity``: Humidity (%RH)
+* ``weather/pressure``: Pressure (kPa)
+* ``weather/temp``: Temperature (°C)
+* ``VL53/distance``: Distance to waste (mm)
+* ``VL53/fill level``: Trashcan fill level (%)
+* ``accel/x``: Acceleration X-axis (m/s²)
+* ``accel/y``: Acceleration Y-axis (m/s²)
+* ``accel/z``: Acceleration Z-axis (m/s²)
+
+Battery voltage and level readings are periodically sent to the following
+``battery/*`` endpoints:
+
+* ``battery/batt_v``: Battery Voltage (V)
+* ``battery/batt_lvl``: Battery Level (%)
 
 Stateful Data (LightDB State)
 -----------------------------
@@ -171,42 +230,6 @@ Further Information in Header Files
 Please refer to the comments in each header file for a service-by-service
 explanation of this template.
 
-Hardware Variations
-*******************
-
-This reference design may be built for a variety of different boards.
-
-Prior to building, update ``VERSION`` file to reflect the firmware version number you want to assign
-to this build. Then run the following commands to build and program the firmware onto the device.
-
-Golioth Aludel Mini
-===================
-
-This reference design may be built for the Golioth Aludel Mini board.
-
-.. code-block:: text
-
-   $ (.venv) west build -p -b aludel_mini/nrf9160/ns app
-   $ (.venv) west flash
-
-Golioth Aludel Elixir
-=====================
-
-This reference design may be built for the Golioth Aludel Elixir board. By default this will build
-for the latest hardware revision of this board.
-
-.. code-block:: text
-
-   $ (.venv) west build -p -b aludel_elixir/nrf9160/ns app
-   $ (.venv) west flash
-
-To build for a specific board revision (e.g. Rev A) add the revision suffix ``@<rev>``.
-
-.. code-block:: text
-
-   $ (.venv) west build -p -b aludel_elixir@A/nrf9160/ns app
-   $ (.venv) west flash
-
 External Libraries
 ******************
 
@@ -216,8 +239,6 @@ from ``west.yml`` and remove the includes/function calls from the C code.
 
 * `golioth-zephyr-boards`_ includes the board definitions for the Golioth
   Aludel-Mini
-* `libostentus`_ is a helper library for controlling the Ostentus ePaper
-  faceplate
 * `zephyr-network-info`_ is a helper library for querying, formatting, and returning network
   connection information via Zephyr log or Golioth RPC
 
@@ -252,8 +273,9 @@ the following workflow to pull in future changes:
    git add resolved_files
    git commit
 
+
+.. _Trashcan Monitor Project Page: https://projects.golioth.io/reference-designs/iot-trashcan-monitor/
 .. _Golioth Console: https://console.golioth.io
-.. _Nordic nRF9160 DK: https://www.nordicsemi.com/Products/Development-hardware/nrf9160-dk
 .. _Pipelines: https://docs.golioth.io/data-routing
 .. _golioth-zephyr-boards: https://github.com/golioth/golioth-zephyr-boards
 .. _libostentus: https://github.com/golioth/libostentus
