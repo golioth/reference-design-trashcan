@@ -100,14 +100,10 @@ void app_sensors_read_and_stream(void)
 	/* Golioth custom hardware for demos */
 	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR, (
 		read_and_report_battery(client);
-		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
-			slide_set(BATTERY_V, get_batt_v_str(), strlen(get_batt_v_str()));
-			slide_set(BATTERY_LVL, get_batt_lvl_str(), strlen(get_batt_lvl_str()));
-		));
 	));
 
 	/* Get VL53X sensor data */
-	struct sensor_value distance_value, proximity_value;
+	struct sensor_value distance_value;
 	int dist_in_mm = 0;
 	int fill_level = -1;
 
@@ -116,14 +112,11 @@ void app_sensors_read_and_stream(void)
 		LOG_ERR("Failed to fetch VL53 sensor data: %d", err);
 	} else {
 		sensor_channel_get(vl53_dev, SENSOR_CHAN_DISTANCE, &distance_value);
-		sensor_channel_get(vl53_dev, SENSOR_CHAN_PROX, &proximity_value);
 		dist_in_mm = sensor_value_to_milli(&distance_value);
 
 		LOG_DBG("Distance is %d mm", dist_in_mm);
-		LOG_DBG("Proximity is %d", proximity_value.val1);
 
 		fill_level = (100 - ((float)dist_in_mm/get_trash_can_heigth_s()) * 100);
-
 		if (fill_level < 0) {
 			fill_level = -1;
 			LOG_WRN("VL53 sensor out of range");
@@ -142,9 +135,9 @@ void app_sensors_read_and_stream(void)
 		sensor_channel_get(bme280_dev, SENSOR_CHAN_HUMIDITY, &bme280_sm.humidity);
 
 		LOG_DBG("BME280: Temperature= %.2f C, Pressure= %.2f kPa, Humidity=%.2f %%RH",
-			sensor_value_to_float(&bme280_sm.temperature),
-			sensor_value_to_float(&bme280_sm.pressure),
-			sensor_value_to_float(&bme280_sm.humidity));
+			sensor_value_to_double(&bme280_sm.temperature),
+			sensor_value_to_double(&bme280_sm.pressure),
+			sensor_value_to_double(&bme280_sm.humidity));
 	}
 
 	/* Get CCS811 sensor data */
@@ -167,9 +160,9 @@ void app_sensors_read_and_stream(void)
 	} else {
 		sensor_channel_get(accel_dev, SENSOR_CHAN_ACCEL_XYZ, accel);
 		LOG_DBG("Accel: x= %.2f , y= %.2f , z= %.2f",
-			sensor_value_to_float(&accel[0]),
-			sensor_value_to_float(&accel[1]),
-			sensor_value_to_float(&accel[2]));
+			sensor_value_to_double(&accel[0]),
+			sensor_value_to_double(&accel[1]),
+			sensor_value_to_double(&accel[2]));
 	}
 
 	/* Encode accelerometer sensor data using CBOR serialization */
@@ -199,14 +192,12 @@ void app_sensors_read_and_stream(void)
 
 	/* Create zcbor state variable for encoding */
 	ZCBOR_STATE_E(zse_vl, 1, vl53_buf, sizeof(vl53_buf), 0);
-	ok = zcbor_map_start_encode(zse_vl, 3) &&
+	ok = zcbor_map_start_encode(zse_vl, 2) &&
 	     zcbor_tstr_put_lit(zse_vl, "distance") &&
 	     zcbor_int32_put(zse_vl, (sensor_value_to_milli(&distance_value))) &&
-	     zcbor_tstr_put_lit(zse_vl, "proximity") &&
-	     zcbor_int32_put(zse_vl, proximity_value.val1) &&
 	     zcbor_tstr_put_lit(zse_vl, "fill level") &&
 	     zcbor_int32_put(zse_vl, fill_level) &&
-	     zcbor_map_end_encode(zse_vl, 3);
+	     zcbor_map_end_encode(zse_vl, 2);
 
 	if (!ok) {
 		GLTH_LOGE(TAG, "Failed to close accelerometer CBOR map");
@@ -221,11 +212,11 @@ void app_sensors_read_and_stream(void)
 	/* Create zcbor state variable for encoding */
 	ZCBOR_STATE_E(zse_weather, 1, weather_buf, sizeof(zse_weather), 0);
 	ok = zcbor_map_start_encode(zse_weather, 4) &&
-	     zcbor_tstr_put_lit(zse_weather, "temp") &&
+	     zcbor_tstr_put_lit(zse_weather, "temperature") &&
              zcbor_float32_put(zse_weather, sensor_value_to_float(&bme280_sm.temperature)) &&
-	     zcbor_tstr_put_lit(zse_weather, "hum") &&
+	     zcbor_tstr_put_lit(zse_weather, "humidity") &&
              zcbor_float32_put(zse_weather, sensor_value_to_float(&bme280_sm.humidity)) &&
-	     zcbor_tstr_put_lit(zse_weather, "pre") &&
+	     zcbor_tstr_put_lit(zse_weather, "pressure") &&
              zcbor_float32_put(zse_weather, sensor_value_to_float(&bme280_sm.pressure)) &&
 	     zcbor_tstr_put_lit(zse_weather, "gas") &&
 	     zcbor_map_start_encode(zse_weather, 2) &&

@@ -58,9 +58,16 @@ cataloging all of the changes to the dependencies and the build (so no
 Prior to building, update ``VERSION`` file to reflect the firmware version number you want to assign
 to this build. Then run the following commands to build and program the firmware onto the device.
 
+
+.. pull-quote::
+   [!IMPORTANT]
+
+   You must perform a pristine build (use ``-p`` or remove the ``build`` directory)
+   after changing the firmware version number in the ``VERSION`` file for the change to take effect.
+
 .. code-block:: text
 
-   $ (.venv) west build -p -b nrf9160dk_nrf9160_ns app
+   $ (.venv) west build -p -b nrf9160dk/nrf9160/ns app
    $ (.venv) west flash
 
 Configure PSK-ID and PSK using the device shell based on your Golioth
@@ -71,6 +78,25 @@ credentials and reboot:
    uart:~$ settings set golioth/psk-id <my-psk-id@my-project>
    uart:~$ settings set golioth/psk <my-psk>
    uart:~$ kernel reboot cold
+
+Add Pipeline to Golioth
+***********************
+
+Golioth uses `Pipelines`_ to route stream data. This gives you flexibility to change your data
+routing without requiring updated device firmware.
+
+Whenever sending stream data, you must enable a pipeline in your Golioth project to configure how
+that data is handled. Add the contents of ``pipelines/cbor-to-lightdb.yml`` as a new pipeline as
+follows (note that this is the default pipeline for new projects and may already be present):
+
+   1. Navigate to your project on the Golioth web console.
+   2. Select ``Pipelines`` from the left sidebar and click the ``Create`` button.
+   3. Give your new pipeline a name and paste the pipeline configuration into the editor.
+   4. Click the toggle in the bottom right to enable the pipeline and then click ``Create``.
+
+All data streamed to Golioth in CBOR format will now be routed to LightDB Stream and may be viewed
+using the web console. You may change this behavior at any time without updating firmware simply by
+editing this pipeline entry.
 
 Golioth Features
 ****************
@@ -160,7 +186,7 @@ This reference design may be built for the Golioth Aludel Mini board.
 
 .. code-block:: text
 
-   $ (.venv) west build -p -b aludel_mini_v1_sparkfun9160_ns app
+   $ (.venv) west build -p -b aludel_mini/nrf9160/ns app
    $ (.venv) west flash
 
 Golioth Aludel Elixir
@@ -171,14 +197,14 @@ for the latest hardware revision of this board.
 
 .. code-block:: text
 
-   $ (.venv) west build -p -b aludel_elixir_ns app
+   $ (.venv) west build -p -b aludel_elixir/nrf9160/ns app
    $ (.venv) west flash
 
 To build for a specific board revision (e.g. Rev A) add the revision suffix ``@<rev>``.
 
 .. code-block:: text
 
-   $ (.venv) west build -p -b aludel_elixir_ns@A app
+   $ (.venv) west build -p -b aludel_elixir@A/nrf9160/ns app
    $ (.venv) west flash
 
 External Libraries
@@ -228,6 +254,7 @@ the following workflow to pull in future changes:
 
 .. _Golioth Console: https://console.golioth.io
 .. _Nordic nRF9160 DK: https://www.nordicsemi.com/Products/Development-hardware/nrf9160-dk
+.. _Pipelines: https://docs.golioth.io/data-routing
 .. _golioth-zephyr-boards: https://github.com/golioth/golioth-zephyr-boards
 .. _libostentus: https://github.com/golioth/libostentus
 .. _zephyr-network-info: https://github.com/golioth/zephyr-network-info
