@@ -31,7 +31,7 @@ LOG_MODULE_REGISTER(golioth_rd_template, LOG_LEVEL_DBG);
 #include <modem/modem_info.h>
 #endif
 
-// Current firmware version; update in VERSION
+/* Current firmware version; update in VERSION */
 static const char *_current_version =
     STRINGIFY(APP_VERSION_MAJOR) "." STRINGIFY(APP_VERSION_MINOR) "." STRINGIFY(APP_PATCHLEVEL);
 

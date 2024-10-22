@@ -41,8 +41,7 @@ static struct bme280_sensor_measurement bme280_sm;
 
 /* Callback for LightDB Stream */
 static void async_error_handler(struct golioth_client *client,
-				const struct golioth_response *response,
-				const char *path,
+				const struct golioth_response *response, const char *path,
 				void *arg)
 {
 	if (response->status != GOLIOTH_OK) {
