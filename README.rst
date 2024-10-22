@@ -119,7 +119,7 @@ to this build. Then run the following commands to build and program the firmware
 
 .. code-block:: text
 
-   $ (.venv) west build -p -b aludel_elixir/nrf9160/ns app
+   $ (.venv) west build -p -b nrf9160dk/nrf9160/ns --sysbuild app
    $ (.venv) west flash
 
 Configure PSK-ID and PSK using the device shell based on your Golioth
@@ -172,6 +172,29 @@ The following settings should be set in the Device Settings menu of the
 
    Default value is ``500`` millimeters.
 
+LightDB Stream Service
+======================
+
+Sensor data is periodically sent to the following endpoints of the LightDB
+Stream service:
+
+* ``weather/gas/co2``: Carbon Dioxide(ppm)
+* ``weather/gas/voc``: Volatile Organic Compounds (ppb)
+* ``weather/humidity``: Humidity (%RH)
+* ``weather/pressure``: Pressure (kPa)
+* ``weather/temp``: Temperature (°C)
+* ``VL53/distance``: Distance to waste (mm)
+* ``VL53/fill level``: Trashcan fill level (%)
+* ``accel/x``: Acceleration X-axis (m/s²)
+* ``accel/y``: Acceleration Y-axis (m/s²)
+* ``accel/z``: Acceleration Z-axis (m/s²)
+
+Battery voltage and level readings are periodically sent to the following
+``battery/*`` endpoints:
+
+* ``battery/batt_v``: Battery Voltage (V)
+* ``battery/batt_lvl``: Battery Level (%)
+
 Remote Procedure Call (RPC) Service
 ===================================
 
@@ -196,54 +219,44 @@ The following RPCs can be initiated in the Remote Procedure Call menu of the
    * ``3``: ``LOG_LEVEL_INF``
    * ``4``: ``LOG_LEVEL_DBG``
 
-LightDB State and LightDB Stream data
-=====================================
+Hardware Variations
+*******************
 
-Time-Series Data (LightDB Stream)
----------------------------------
+This reference design may be built for a variety of different boards.
 
-Sensor data is periodically sent to the following endpoints of the LightDB
-Stream service:
+Prior to building, update ``VERSION`` file to reflect the firmware version number you want to assign
+to this build. Then run the following commands to build and program the firmware onto the device.
 
-* ``weather/gas/co2``: Carbon Dioxide(ppm)
-* ``weather/gas/voc``: Volatile Organic Compounds (ppb)
-* ``weather/humidity``: Humidity (%RH)
-* ``weather/pressure``: Pressure (kPa)
-* ``weather/temp``: Temperature (°C)
-* ``VL53/distance``: Distance to waste (mm)
-* ``VL53/fill level``: Trashcan fill level (%)
-* ``accel/x``: Acceleration X-axis (m/s²)
-* ``accel/y``: Acceleration Y-axis (m/s²)
-* ``accel/z``: Acceleration Z-axis (m/s²)
+Golioth Aludel Elixir
+=====================
 
-Battery voltage and level readings are periodically sent to the following
-``battery/*`` endpoints:
+This reference design may be built for the Golioth Aludel Elixir board. By default this will build
+for the latest hardware revision of this board.
 
-* ``battery/batt_v``: Battery Voltage (V)
-* ``battery/batt_lvl``: Battery Level (%)
+.. code-block:: text
 
-Stateful Data (LightDB State)
------------------------------
+   $ (.venv) west build -p -b aludel_elixir/nrf9160/ns --sysbuild app
+   $ (.venv) west flash
 
-The concept of Digital Twin is demonstrated with the LightDB State
-``example_int0`` and ``example_int1`` variables that are members of the ``desired``
-and ``state`` endpoints.
+To build for a specific board revision (e.g. Rev A) add the revision suffix ``@<rev>``.
 
-* ``desired`` values may be changed from the cloud side. The device will recognize
-  these, validate them for [0..65535] bounding, and then reset these endpoints
-  to ``-1``
+.. code-block:: text
 
-* ``state`` values will be updated by the device whenever a valid value is
-  received from the ``desired`` endpoints. The cloud may read the ``state``
-  endpoints to determine device status, but only the device should ever write to
-  the ``state`` endpoints.
+   $ (.venv) west build -p -b aludel_elixir@A/nrf9160/ns --sysbuild app
+   $ (.venv) west flash
 
-Further Information in Header Files
-===================================
+OTA Firmware Update
+*******************
 
-Please refer to the comments in each header file for a service-by-service
-explanation of this template.
+This application includes the ability to perform Over-the-Air (OTA) firmware updates:
 
+1. Update the version number in the `VERSION` file and perform a pristine (important) build to
+   incorporate the version change.
+2. Upload the `build/app/zephyr/zephyr.signed.bin` file as an artifact for your Golioth project
+   using `main` as the package name.
+3. Create and roll out a release based on this artifact.
+
+Visit `the Golioth Docs OTA Firmware Upgrade page`_ for more info.
 External Libraries
 ******************
 
@@ -287,10 +300,10 @@ the following workflow to pull in future changes:
    git add resolved_files
    git commit
 
-
 .. _Trashcan Monitor Project Page: https://projects.golioth.io/reference-designs/iot-trashcan-monitor/
+.. _nRF9160 DK Follow-Along Guide: https://projects.golioth.io/reference-designs/iot-trashcan-monitor/guide-nrf9160-dk
 .. _Golioth Console: https://console.golioth.io
 .. _Pipelines: https://docs.golioth.io/data-routing
+.. _the Golioth Docs OTA Firmware Upgrade page: https://docs.golioth.io/firmware/golioth-firmware-sdk/firmware-upgrade/firmware-upgrade
 .. _golioth-zephyr-boards: https://github.com/golioth/golioth-zephyr-boards
-.. _libostentus: https://github.com/golioth/libostentus
 .. _zephyr-network-info: https://github.com/golioth/zephyr-network-info
