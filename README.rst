@@ -41,6 +41,18 @@ This firmware can be built for a variety of supported hardware platforms.
    correct Zephyr board identifier that corresponds to your follow-along
    hardware platform.
 
+.. list-table:: **Follow-Along Hardware**
+   :header-rows: 1
+
+   * - Hardware
+     - Zephyr Board
+     - Follow-Along Guide
+
+   * - .. image:: images/nrf9160-dk-placeholder.jpg
+          :width: 240
+     - ``nrf9160dk/nrf9160/ns``
+     - `nRF9160 DK Follow-Along Guide`_
+
 .. list-table:: **Custom Golioth Hardware**
    :header-rows: 1
 
@@ -51,6 +63,8 @@ This firmware can be built for a variety of supported hardware platforms.
           :width: 240
      - ``aludel_elixir/nrf9160/ns``
      - `Trashcan Monitor Project Page`_
+
+
 
 Local set up
 ************
