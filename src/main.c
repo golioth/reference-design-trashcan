@@ -10,7 +10,6 @@ LOG_MODULE_REGISTER(golioth_rd_template, LOG_LEVEL_DBG);
 #include <app_version.h>
 #include "app_rpc.h"
 #include "app_settings.h"
-#include "app_state.h"
 #include "app_sensors.h"
 #include <golioth/client.h>
 #include <golioth/fw_update.h>
@@ -83,9 +82,6 @@ static void start_golioth_client(void)
 
 
 	/*** Call Golioth APIs for other services in dedicated app files ***/
-
-	/* Observe State service data */
-	app_state_observe(client);
 
 	/* Set Golioth Client for streaming sensor data */
 	app_sensors_set_client(client);
