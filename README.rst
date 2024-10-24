@@ -257,6 +257,7 @@ This application includes the ability to perform Over-the-Air (OTA) firmware upd
 3. Create and roll out a release based on this artifact.
 
 Visit `the Golioth Docs OTA Firmware Upgrade page`_ for more info.
+
 External Libraries
 ******************
 
@@ -268,37 +269,6 @@ from ``west.yml`` and remove the includes/function calls from the C code.
   Aludel-Mini
 * `zephyr-network-info`_ is a helper library for querying, formatting, and returning network
   connection information via Zephyr log or Golioth RPC
-
-Using this template to start a new project
-******************************************
-
-Fork this template to create your own Reference Design. After checking out your fork, we recommend
-the following workflow to pull in future changes:
-
-* Setup
-
-  * Create a ``template`` remote based on the Reference Design Template repository
-
-* Merge in template changes
-
-  * Fetch template changes and tags
-  * Merge template release tag into your ``main`` (or other branch)
-  * Resolve merge conflicts (if any) and commit to your repository
-
-.. code-block:: shell
-
-   # Setup
-   git remote add template https://github.com/golioth/reference-design-template.git
-   git fetch template --tags
-
-   # Merge in template changes
-   git fetch template --tags
-   git checkout your_local_branch
-   git merge template_v1.0.0
-
-   # Resolve merge conflicts if necessary
-   git add resolved_files
-   git commit
 
 .. _Trashcan Monitor Project Page: https://projects.golioth.io/reference-designs/iot-trashcan-monitor/
 .. _nRF9160 DK Follow-Along Guide: https://projects.golioth.io/reference-designs/iot-trashcan-monitor/guide-nrf9160-dk
