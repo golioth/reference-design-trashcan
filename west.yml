@@ -1,31 +1,47 @@
+# Copyright (c) 2022-2023 Golioth, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 manifest:
-  version: 0.7
- 
-  defaults:
-    remote: nrfconnect
+  version: 0.8
 
-  remotes:
-    - name: nrfconnect
-      url-base: https://github.com/nrfconnect
   projects:
-    - name: nrf
-      repo-path: sdk-nrf
-      remote: nrfconnect
-      revision: v2.0.0
-      import:
-        path-prefix: deps
-
-    # Golioth repository.
     - name: golioth
-      path: deps/modules/lib/golioth
-      revision: 5fe942c551a8f56622b1c19ea6bab4343f3f3626
-      url: https://github.com/golioth/golioth-zephyr-sdk.git
+      path: modules/lib/golioth-firmware-sdk
+      revision: v0.15.0
+      url: https://github.com/golioth/golioth-firmware-sdk.git
+      west-commands: scripts/west-commands.yml
+      submodules: true
+      import:
+        file: west-ncs.yml
+        path-prefix: deps
+        name-allowlist:
+          - nrf
+          - zephyr
+          - cmsis
+          - hal_nordic
+          - hal_st
+          - mbedtls
+          - mbedtls-nrf
+          - mcuboot
+          - net-tools
+          - nrfxlib
+          - oberon-psa-crypto
+          - qcbor
+          - segger
+          - tfm-mcuboot
+          - tinycrypt
+          - trusted-firmware-m
+          - zcbor
 
-    # QCBOR
-    - name: qcbor
-      path: deps/modules/lib/qcbor
-      revision: 17b5607b8c49b835d22dec3effa97b25c89267b3
-      url: https://github.com/golioth/QCBOR.git
+    - name: golioth-zephyr-boards
+      path: deps/modules/lib/golioth-boards
+      revision: v2.0.1
+      url: https://github.com/golioth/golioth-zephyr-boards
+
+    - name: zephyr-network-info
+      path: deps/modules/lib/network-info
+      revision: v1.2.0
+      url: https://github.com/golioth/zephyr-network-info
 
   self:
     path: app
