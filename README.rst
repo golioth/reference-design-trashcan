@@ -48,7 +48,7 @@ This firmware can be built for a variety of supported hardware platforms.
      - Zephyr Board
      - Follow-Along Guide
 
-   * - .. image:: images/nrf9160-dk-placeholder.jpg
+   * - .. image:: images/nrf9160-dk-follow-along.jpg
           :width: 240
      - ``nrf9160dk/nrf9160/ns``
      - `nRF9160 DK Follow-Along Guide`_
