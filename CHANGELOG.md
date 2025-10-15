@@ -8,6 +8,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-10-16
+
+### Changed
+
+- Merge changes from
+  [`golioth/reference-design-template@template_v2.8.0`](https://github.com/golioth/reference-design-template/tree/template_v2.8.0).
+- OTA firmware update now uses unique package names: `nrf9160dk` and
+  `aludel_elixir`.
+
 ## [trashcan_v1.0.0] - 2024-31-10
 
 ### Added
