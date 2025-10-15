@@ -54,8 +54,8 @@ This app implements:
 
 ### Settings Service
 
-The following settings should be set in the Device Settings menu of the
-[Golioth Console](https://console.golioth.io).
+The following settings should be set in [the Device Settings menu of the
+Golioth Console](https://console.golioth.io/device-settings).
 
   - `LOOP_DELAY_S`
     Adjusts the delay between sensor readings. Set to an integer value
@@ -70,8 +70,8 @@ The following settings should be set in the Device Settings menu of the
 
 ### Remote Procedure Call (RPC) Service
 
-The following RPCs can be initiated in the Remote Procedure Call menu of
-the [Golioth Console](https://console.golioth.io).
+The following RPCs can be initiated in the Remote Procedure Call tab of
+each device in the [Golioth Console](https://console.golioth.io).
 
   - `get_network_info`
     Query and return network information.
