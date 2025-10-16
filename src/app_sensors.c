@@ -54,16 +54,18 @@ static void stream_payload(uint8_t* cbor_buf, size_t cbor_size, char* path)
 {
 	int err;
 
-	/* Stream data to Golioth */
-	err = golioth_stream_set_async(client,
-				       path,
-				       GOLIOTH_CONTENT_TYPE_CBOR,
-				       cbor_buf,
-				       cbor_size,
-				       async_error_handler,
-				       NULL);
-	if (err) {
-		LOG_ERR("Failed to send %s data to Golioth: %d", path, err);
+	/* Only stream sensor data if connected */
+	if (golioth_client_is_connected(client)) {
+		err = golioth_stream_set_async(client,
+					path,
+					GOLIOTH_CONTENT_TYPE_CBOR,
+					cbor_buf,
+					cbor_size,
+					async_error_handler,
+					NULL);
+		if (err) {
+			LOG_ERR("Failed to send %s data to Golioth: %d", path, err);
+		}
 	}
 }
 
